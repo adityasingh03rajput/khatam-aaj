@@ -6,22 +6,17 @@ const mongoose = require('mongoose');
  */
 
 const periodEntrySchema = new mongoose.Schema({
-    courseName: {
+    subject: {
         type: String,
         default: '',
         trim: true
     },
-    roomNumber: {
+    room: {
         type: String,
         default: '',
         trim: true
     },
-    teacherName: {
-        type: String,
-        default: '',
-        trim: true
-    },
-    courseCode: {
+    teacher: {
         type: String,
         default: '',
         trim: true
