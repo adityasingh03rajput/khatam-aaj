@@ -46,3 +46,13 @@ vcs.xml
 
 # Cache of project
 .gradletasknamecache
+
+# Node modules
+node_modules/
+package-lock.json
+
+# VS Code
+.vscode/
+
+# Backup files
+backups/

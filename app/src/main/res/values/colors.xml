@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors - Soft Blue Theme -->
+    <color name="primary">#6C63FF</color>
+    <color name="primary_dark">#5548E8</color>
+    <color name="primary_light">#9D97FF</color>
+    <color name="accent">#FF6B9D</color>
+    
+    <!-- Background Colors - Soft Gradients -->
+    <color name="background_gradient_start">#F8F9FE</color>
+    <color name="background_gradient_end">#FFFFFF</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="surface">#F5F7FA</color>
+    
+    <!-- Status Colors - Soft Pastels -->
+    <color name="success">#4CAF50</color>
+    <color name="success_light">#E8F5E9</color>
+    <color name="warning">#FF9800</color>
+    <color name="warning_light">#FFF3E0</color>
+    <color name="error">#F44336</color>
+    <color name="error_light">#FFEBEE</color>
+    <color name="info">#2196F3</color>
+    <color name="info_light">#E3F2FD</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#2D3436</color>
+    <color name="text_secondary">#636E72</color>
+    <color name="text_hint">#B2BEC3</color>
+    <color name="text_white">#FFFFFF</color>
+    
+    <!-- Timer Colors -->
+    <color name="timer_running">#6C63FF</color>
+    <color name="timer_paused">#FF9800</color>
+    <color name="timer_completed">#4CAF50</color>
+    
+    <!-- Card Gradient Colors -->
+    <color name="gradient_purple_start">#A18CD1</color>
+    <color name="gradient_purple_end">#FBC2EB</color>
+    <color name="gradient_blue_start">#667EEA</color>
+    <color name="gradient_blue_end">#764BA2</color>
+    <color name="gradient_green_start">#56CCF2</color>
+    <color name="gradient_green_end">#2F80ED</color>
+    <color name="gradient_orange_start">#FFB75E</color>
+    <color name="gradient_orange_end">#ED8F03</color>
+    
+    <!-- Attendance Status Colors -->
+    <color name="attending">#4CAF50</color>
+    <color name="absent">#FF9800</color>
+    <color name="attended">#2196F3</color>
+    
+    <!-- Shadow Colors -->
+    <color name="shadow_light">#1A000000</color>
+    <color name="shadow_medium">#33000000</color>
+    
+    <!-- Dark Theme Colors (matching HTML timetable) -->
+    <color name="bg_dark">#121212</color>
+    <color name="bg_panel">#1E1E1E</color>
+    <color name="bg_element">#2D2D2D</color>
+    <color name="primary_blue">#5D9CEC</color>
+    <color name="primary_blue_light">#7EB0F1</color>
+    <color name="primary_blue_dark">#4A8BD9</color>
+    <color name="text_primary_dark">#E0E0E0</color>
+    <color name="text_secondary_dark">#A0A0A0</color>
+    <color name="accent_green">#48C774</color>
+    <color name="border_dark">#333333</color>
+    <color name="delete_red">#ff6b6b</color>
+    
+    <!-- Timetable specific colors -->
+    <color name="background_light">#F8F9FE</color>
+    <color name="header_background">#6C63FF</color>
+</resources>

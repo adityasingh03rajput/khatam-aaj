@@ -1,0 +1,662 @@
+[
+  {
+    "timestamp": "2025-10-02T21:19:57.481819",
+    "detected_elements": [
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 367,
+          "y": 1375,
+          "width": 321,
+          "height": 97
+        },
+        "area": 30625
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 31,
+          "y": 1375,
+          "width": 322,
+          "height": 97
+        },
+        "area": 30719
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 373,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 37,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      }
+    ],
+    "text_regions": [],
+    "colors": {
+      "average_rgb": [
+        69,
+        43,
+        37
+      ]
+    }
+  },
+  {
+    "timestamp": "2025-10-02T21:20:01.357789",
+    "detected_elements": [
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 367,
+          "y": 1375,
+          "width": 321,
+          "height": 97
+        },
+        "area": 30715
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 454,
+          "y": 434,
+          "width": 54,
+          "height": 88
+        },
+        "area": 2020
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 333,
+          "y": 420,
+          "width": 161,
+          "height": 100
+        },
+        "area": 1117
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 15,
+          "y": 361,
+          "width": 705,
+          "height": 216
+        },
+        "area": 5005
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 373,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 37,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      }
+    ],
+    "text_regions": [],
+    "colors": {
+      "average_rgb": [
+        35,
+        26,
+        20
+      ]
+    }
+  },
+  {
+    "timestamp": "2025-10-02T21:20:05.160673",
+    "detected_elements": [
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 367,
+          "y": 1375,
+          "width": 321,
+          "height": 97
+        },
+        "area": 30625
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 31,
+          "y": 1375,
+          "width": 321,
+          "height": 97
+        },
+        "area": 30717
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 373,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 37,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      }
+    ],
+    "text_regions": [],
+    "colors": {
+      "average_rgb": [
+        39,
+        25,
+        22
+      ]
+    }
+  },
+  {
+    "timestamp": "2025-10-02T21:20:09.018606",
+    "detected_elements": [
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 367,
+          "y": 1375,
+          "width": 321,
+          "height": 97
+        },
+        "area": 30625
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 31,
+          "y": 1375,
+          "width": 321,
+          "height": 97
+        },
+        "area": 30717
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 240,
+          "y": 831,
+          "width": 276,
+          "height": 85
+        },
+        "area": 23100
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 240,
+          "y": 727,
+          "width": 276,
+          "height": 85
+        },
+        "area": 23100
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 240,
+          "y": 603,
+          "width": 276,
+          "height": 85
+        },
+        "area": 23100
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 240,
+          "y": 499,
+          "width": 276,
+          "height": 85
+        },
+        "area": 23100
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 373,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 37,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      }
+    ],
+    "text_regions": [],
+    "colors": {
+      "average_rgb": [
+        70,
+        43,
+        37
+      ]
+    }
+  },
+  {
+    "timestamp": "2025-10-02T21:20:12.822989",
+    "detected_elements": [
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 367,
+          "y": 1375,
+          "width": 321,
+          "height": 97
+        },
+        "area": 30625
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 31,
+          "y": 1375,
+          "width": 321,
+          "height": 97
+        },
+        "area": 30717
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 240,
+          "y": 603,
+          "width": 276,
+          "height": 85
+        },
+        "area": 23100
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 240,
+          "y": 499,
+          "width": 276,
+          "height": 85
+        },
+        "area": 23100
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 373,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 37,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      }
+    ],
+    "text_regions": [],
+    "colors": {
+      "average_rgb": [
+        70,
+        44,
+        38
+      ]
+    }
+  },
+  {
+    "timestamp": "2025-10-02T21:20:16.659132",
+    "detected_elements": [
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 200,
+          "y": 1427,
+          "width": 41,
+          "height": 41
+        },
+        "area": 1341
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 609,
+          "y": 1407,
+          "width": 98,
+          "height": 78
+        },
+        "area": 7246
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 634,
+          "y": 1332,
+          "width": 50,
+          "height": 35
+        },
+        "area": 1473
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 368,
+          "y": 802,
+          "width": 320,
+          "height": 97
+        },
+        "area": 30623
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 31,
+          "y": 802,
+          "width": 321,
+          "height": 97
+        },
+        "area": 30717
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 235,
+          "y": 603,
+          "width": 285,
+          "height": 86
+        },
+        "area": 24074
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 240,
+          "y": 499,
+          "width": 276,
+          "height": 85
+        },
+        "area": 23100
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 373,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 37,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      }
+    ],
+    "text_regions": [],
+    "colors": {
+      "average_rgb": [
+        72,
+        46,
+        39
+      ]
+    }
+  },
+  {
+    "timestamp": "2025-10-02T21:20:20.530485",
+    "detected_elements": [
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 367,
+          "y": 1375,
+          "width": 321,
+          "height": 97
+        },
+        "area": 30625
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 31,
+          "y": 1375,
+          "width": 321,
+          "height": 97
+        },
+        "area": 30717
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 235,
+          "y": 603,
+          "width": 285,
+          "height": 86
+        },
+        "area": 24074
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 240,
+          "y": 499,
+          "width": 276,
+          "height": 85
+        },
+        "area": 23100
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 373,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 37,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      }
+    ],
+    "text_regions": [],
+    "colors": {
+      "average_rgb": [
+        69,
+        43,
+        38
+      ]
+    }
+  },
+  {
+    "timestamp": "2025-10-02T21:20:24.243698",
+    "detected_elements": [
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 209,
+          "y": 1375,
+          "width": 321,
+          "height": 97
+        },
+        "area": 30717
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 215,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      }
+    ],
+    "text_regions": [],
+    "colors": {
+      "average_rgb": [
+        63,
+        42,
+        35
+      ]
+    }
+  },
+  {
+    "timestamp": "2025-10-02T21:20:27.886797",
+    "detected_elements": [
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 367,
+          "y": 1375,
+          "width": 321,
+          "height": 97
+        },
+        "area": 30625
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 31,
+          "y": 1375,
+          "width": 321,
+          "height": 97
+        },
+        "area": 30717
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 373,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 37,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      }
+    ],
+    "text_regions": [],
+    "colors": {
+      "average_rgb": [
+        70,
+        43,
+        38
+      ]
+    }
+  },
+  {
+    "timestamp": "2025-10-02T21:20:31.771520",
+    "detected_elements": [
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 367,
+          "y": 1375,
+          "width": 321,
+          "height": 97
+        },
+        "area": 30625
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 31,
+          "y": 1375,
+          "width": 321,
+          "height": 97
+        },
+        "area": 30717
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 373,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      },
+      {
+        "type": "ui_element",
+        "bounds": {
+          "x": 37,
+          "y": 237,
+          "width": 310,
+          "height": 67
+        },
+        "area": 20394
+      }
+    ],
+    "text_regions": [],
+    "colors": {
+      "average_rgb": [
+        70,
+        43,
+        38
+      ]
+    }
+  }
+]
