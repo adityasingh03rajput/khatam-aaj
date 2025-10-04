@@ -1,0 +1,675 @@
+================================================================================
+                    LETSBUNK - COMPLETE SETUP GUIDE
+                    From Zero to Running Application
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+1. Prerequisites & System Requirements
+2. Installing Required Software
+3. Cloning the Project
+4. Setting Up the Server
+5. Setting Up the Android App
+6. Setting Up the Admin Panel
+7. Running the Complete System
+8. Testing & Verification
+9. Troubleshooting
+10. Network Configuration
+
+================================================================================
+1. PREREQUISITES & SYSTEM REQUIREMENTS
+================================================================================
+
+MINIMUM REQUIREMENTS:
+- Operating System: Windows 10/11, macOS, or Linux
+- RAM: 8GB (16GB recommended)
+- Storage: 10GB free space
+- Internet connection for downloading dependencies
+
+REQUIRED KNOWLEDGE:
+- Basic command line usage
+- Basic understanding of Android development (optional)
+- Basic understanding of Node.js (optional)
+
+================================================================================
+2. INSTALLING REQUIRED SOFTWARE
+================================================================================
+
+2.1 INSTALL GIT
+---------------
+Windows:
+1. Download Git from: https://git-scm.com/download/win
+2. Run the installer
+3. Use default settings
+4. Verify installation:
+   Open Command Prompt and type: git --version
+
+macOS:
+1. Install Homebrew: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+2. Install Git: brew install git
+3. Verify: git --version
+
+Linux:
+1. Ubuntu/Debian: sudo apt-get install git
+2. Fedora: sudo dnf install git
+3. Verify: git --version
+
+2.2 INSTALL NODE.JS & NPM
+-------------------------
+1. Download Node.js LTS from: https://nodejs.org/
+   - Recommended version: 18.x or 20.x LTS
+2. Run the installer
+3. Follow installation wizard (use default settings)
+4. Verify installation:
+   node --version
+   npm --version
+
+Expected output:
+   v18.x.x or v20.x.x
+   9.x.x or 10.x.x
+
+2.3 INSTALL JAVA JDK
+--------------------
+For Admin Panel (Java Swing Application):
+
+1. Download Java JDK 17 or 21 from:
+   https://www.oracle.com/java/technologies/downloads/
+   OR
+   https://adoptium.net/ (OpenJDK)
+
+2. Install JDK:
+   Windows: Run the .exe installer
+   macOS: Run the .dmg installer
+   Linux: Use package manager or extract tar.gz
+
+3. Set JAVA_HOME environment variable:
+   
+   Windows:
+   - Right-click "This PC" → Properties → Advanced System Settings
+   - Environment Variables → New (System Variables)
+   - Variable name: JAVA_HOME
+   - Variable value: C:\Program Files\Java\jdk-17 (or your JDK path)
+   - Add to Path: %JAVA_HOME%\bin
+
+   macOS/Linux:
+   Add to ~/.bashrc or ~/.zshrc:
+   export JAVA_HOME=/path/to/jdk
+   export PATH=$JAVA_HOME/bin:$PATH
+
+4. Verify installation:
+   java -version
+   javac -version
+
+2.4 INSTALL ANDROID STUDIO & SDK
+---------------------------------
+1. Download Android Studio from:
+   https://developer.android.com/studio
+
+2. Install Android Studio:
+   - Run the installer
+   - Choose "Standard" installation
+   - Accept licenses
+   - Wait for SDK download (this takes time)
+
+3. Configure Android SDK:
+   - Open Android Studio
+   - Go to: Tools → SDK Manager
+   - Install:
+     ✓ Android SDK Platform 34 (Android 14)
+     ✓ Android SDK Build-Tools 34.0.0
+     ✓ Android SDK Platform-Tools
+     ✓ Android SDK Tools
+     ✓ Android Emulator (optional, for testing)
+
+4. Set ANDROID_HOME environment variable:
+   
+   Windows:
+   - Variable name: ANDROID_HOME
+   - Variable value: C:\Users\YourName\AppData\Local\Android\Sdk
+   - Add to Path: %ANDROID_HOME%\platform-tools
+
+   macOS:
+   export ANDROID_HOME=$HOME/Library/Android/sdk
+   export PATH=$PATH:$ANDROID_HOME/platform-tools
+
+   Linux:
+   export ANDROID_HOME=$HOME/Android/Sdk
+   export PATH=$PATH:$ANDROID_HOME/platform-tools
+
+5. Verify ADB installation:
+   adb --version
+
+2.5 INSTALL MONGODB
+-------------------
+1. Download MongoDB Community Server from:
+   https://www.mongodb.com/try/download/community
+
+2. Install MongoDB:
+   Windows:
+   - Run the .msi installer
+   - Choose "Complete" installation
+   - Install as Windows Service
+   - Install MongoDB Compass (GUI tool)
+
+   macOS:
+   brew tap mongodb/brew
+   brew install mongodb-community
+
+   Linux:
+   Follow instructions at: https://docs.mongodb.com/manual/administration/install-on-linux/
+
+3. Start MongoDB:
+   Windows: MongoDB starts automatically as service
+   macOS: brew services start mongodb-community
+   Linux: sudo systemctl start mongod
+
+4. Verify MongoDB is running:
+   mongosh
+   (Should connect to MongoDB shell)
+
+================================================================================
+3. CLONING THE PROJECT
+================================================================================
+
+3.1 CLONE FROM GITHUB
+---------------------
+1. Open Command Prompt/Terminal
+
+2. Navigate to desired location:
+   cd C:\Projects  (Windows)
+   cd ~/Projects   (macOS/Linux)
+
+3. Clone the repository:
+   git clone https://github.com/adityasingh03rajput/khatam-aaj.git
+
+4. Navigate to project:
+   cd khatam-aaj
+
+5. Verify files:
+   dir  (Windows)
+   ls   (macOS/Linux)
+
+   You should see:
+   - app/
+   - server/
+   - admin panel/
+   - gradle/
+   - build.gradle
+   - settings.gradle
+   - README.md
+
+================================================================================
+4. SETTING UP THE SERVER
+================================================================================
+
+4.1 INSTALL SERVER DEPENDENCIES
+-------------------------------
+1. Navigate to server directory:
+   cd server
+
+2. Install Node.js dependencies:
+   npm install
+
+   This will install:
+   - express (web framework)
+   - socket.io (real-time communication)
+   - mongoose (MongoDB ODM)
+   - bcrypt (password hashing)
+   - cors (cross-origin requests)
+   - And other dependencies from package.json
+
+3. Wait for installation to complete (may take 2-5 minutes)
+
+4. Verify installation:
+   - Check node_modules/ folder exists
+   - Should contain 100+ packages
+
+4.2 CONFIGURE SERVER
+--------------------
+1. Check server configuration in server.js:
+   - Default port: 3000
+   - Default MongoDB: mongodb://localhost:27017/letsbunk
+
+2. Get your local IP address:
+   
+   Windows:
+   ipconfig
+   Look for "IPv4 Address" under your WiFi adapter
+   Example: 192.168.1.100
+
+   macOS/Linux:
+   ifconfig
+   Look for "inet" under your network interface
+   Example: 192.168.1.100
+
+3. Update SERVER_URL in server.js if needed:
+   Line 14: const SERVER_URL = "http://YOUR_IP:3000"
+   Replace YOUR_IP with your actual IP address
+
+4.3 START THE SERVER
+--------------------
+1. From server directory:
+   node server.js
+
+2. You should see:
+   ===========================================
+   LetsBunk Server Started Successfully!
+   ===========================================
+   Server URL: http://192.168.89.31:3000
+   Local URL: http://localhost:3000
+   Authorized BSSID: ee:ee:6d:9d:6f:ba
+   MongoDB: Connected
+
+3. Keep this terminal window open (server is running)
+
+4. Test server:
+   Open browser and go to: http://localhost:3000/api/health
+   Should see: {"status":"ok"}
+
+================================================================================
+5. SETTING UP THE ANDROID APP
+================================================================================
+
+5.1 CONFIGURE GRADLE
+--------------------
+1. Open new terminal/command prompt
+
+2. Navigate to project root:
+   cd path/to/khatam-aaj
+
+3. Check Gradle wrapper:
+   Windows: gradlew.bat --version
+   macOS/Linux: ./gradlew --version
+
+4. If Gradle wrapper doesn't exist, Android Studio will create it
+
+5.2 UPDATE SERVER IP IN APP
+----------------------------
+1. Open: app/src/main/java/com/example/letsbunk/NetworkManager.kt
+
+2. Find line (around line 14):
+   private const val SERVER_URL = "http://192.168.89.31:3000"
+
+3. Update with your server IP:
+   private const val SERVER_URL = "http://YOUR_IP:3000"
+
+4. Save the file
+
+5.3 BUILD THE APK
+-----------------
+Option A: Using Command Line (Recommended)
+
+1. From project root:
+   Windows: gradlew.bat clean assembleDebug
+   macOS/Linux: ./gradlew clean assembleDebug
+
+2. Wait for build to complete (first build takes 5-10 minutes)
+
+3. APK location:
+   app/build/outputs/apk/debug/app-debug.apk
+
+Option B: Using Android Studio
+
+1. Open Android Studio
+2. File → Open → Select project folder
+3. Wait for Gradle sync
+4. Build → Build Bundle(s) / APK(s) → Build APK(s)
+5. Wait for build
+6. Click "locate" in notification to find APK
+
+5.4 INSTALL APK ON DEVICE
+--------------------------
+1. Enable USB Debugging on Android device:
+   - Settings → About Phone
+   - Tap "Build Number" 7 times
+   - Go back → Developer Options
+   - Enable "USB Debugging"
+
+2. Connect device via USB
+
+3. Verify connection:
+   adb devices
+   Should show your device
+
+4. Install APK:
+   adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+5. Launch app:
+   adb shell am start -n com.example.letsbunk/.MainActivity
+
+================================================================================
+6. SETTING UP THE ADMIN PANEL
+================================================================================
+
+6.1 VERIFY JAVA INSTALLATION
+-----------------------------
+1. Check Java version:
+   java -version
+
+2. Should show Java 17 or higher
+
+6.2 UPDATE SERVER IP IN ADMIN PANEL
+------------------------------------
+1. Open: admin panel/AdvancedAdminPanel.java
+
+2. Find line 14:
+   private static final String SERVER_URL = "http://192.168.89.31:3000";
+
+3. Update with your server IP:
+   private static final String SERVER_URL = "http://YOUR_IP:3000";
+
+4. Save the file
+
+6.3 COMPILE ADMIN PANEL (if needed)
+------------------------------------
+If .class files are missing:
+
+1. Navigate to admin panel directory:
+   cd "admin panel"
+
+2. Compile Java files:
+   javac -cp ".;json.jar" AdvancedAdminPanel.java
+
+3. Verify .class files are created
+
+6.4 RUN ADMIN PANEL
+-------------------
+Option A: Using Batch File (Windows)
+
+1. Double-click: START_ADVANCED_ADMIN.bat
+
+Option B: Using Command Line
+
+1. Navigate to admin panel directory:
+   cd "admin panel"
+
+2. Run:
+   Windows: java -cp ".;json.jar" AdvancedAdminPanel
+   macOS/Linux: java -cp ".:json.jar" AdvancedAdminPanel
+
+3. Admin panel window should open
+
+================================================================================
+7. RUNNING THE COMPLETE SYSTEM
+================================================================================
+
+7.1 STARTUP SEQUENCE
+--------------------
+1. Start MongoDB (if not running as service)
+2. Start Server (node server.js)
+3. Start Admin Panel (run batch file or java command)
+4. Install & Launch Mobile App
+
+7.2 USING AUTOMATED STARTUP (Windows)
+--------------------------------------
+1. Double-click: START_EVERYTHING.bat
+
+   This will:
+   - Check server status
+   - Start server if not running
+   - Start admin panel
+   - Check for connected devices
+   - Install APK if device connected
+   - Launch app
+
+7.3 VERIFY ALL COMPONENTS
+--------------------------
+1. Server:
+   - Terminal shows "Server Started Successfully"
+   - Browser: http://localhost:3000/api/health shows {"status":"ok"}
+
+2. Admin Panel:
+   - Window opens
+   - Top right shows "Online" in green
+   - Shows "0 Students Online"
+
+3. Mobile App:
+   - App opens
+   - Top shows "Connected" in green
+   - Shows WiFi BSSID
+   - Timer shows 10:00
+
+================================================================================
+8. TESTING & VERIFICATION
+================================================================================
+
+8.1 TEST SERVER CONNECTION
+---------------------------
+1. Open browser
+2. Test endpoints:
+   - http://localhost:3000/api/health
+   - http://localhost:3000/api/config/bssid
+   - http://localhost:3000/api/attendance/list
+
+8.2 TEST ADMIN PANEL
+---------------------
+1. Create Student Profile:
+   - Click "Create Student Profile"
+   - Fill in details:
+     * Student ID: TEST001
+     * Name: Test Student
+     * Email: test@example.com
+     * Phone: 1234567890
+     * Branch: Computer Science
+     * Semester: 1st Semester
+   - Click "Create"
+   - Should see success message
+
+2. View Students:
+   - Click "View All Students"
+   - Should see TEST001 in list
+
+8.3 TEST MOBILE APP
+--------------------
+1. Select Role:
+   - Choose "Student" or "Teacher"
+   - Enter name
+   - Click "Continue"
+
+2. Test as Student:
+   - Click "Mark Attendance"
+   - Timer should start (10:00)
+   - Should appear in admin panel
+   - Timer counts down
+
+3. Test as Teacher:
+   - Should see attendance list
+   - Shows connected students
+   - Can view timetable
+
+8.4 TEST BIOMETRIC REGISTRATION
+--------------------------------
+1. In Admin Panel:
+   - Create student profile (if not exists)
+   - Click "Add Biometric" button
+   - Dialog shows "Waiting for Mobile Device"
+
+2. On Mobile Device:
+   - Dialog should appear automatically
+   - Click "Start Registration"
+   - Follow fingerprint prompt
+   - Follow face capture prompt
+   - Should see success message
+
+3. Verify:
+   - Admin panel shows success
+   - Server logs show registration
+   - Data stored in database
+
+================================================================================
+9. TROUBLESHOOTING
+================================================================================
+
+9.1 SERVER ISSUES
+-----------------
+Problem: Server won't start
+Solution:
+- Check MongoDB is running: mongosh
+- Check port 3000 is free: netstat -ano | findstr :3000
+- Check Node.js installed: node --version
+- Reinstall dependencies: npm install
+
+Problem: "Cannot connect to MongoDB"
+Solution:
+- Start MongoDB service
+- Check MongoDB is running on port 27017
+- Verify connection string in server.js
+
+9.2 ANDROID APP ISSUES
+----------------------
+Problem: Build fails
+Solution:
+- Check Java JDK installed: java -version
+- Check Android SDK installed
+- Clean build: gradlew clean
+- Sync Gradle: gradlew --refresh-dependencies
+
+Problem: APK won't install
+Solution:
+- Uninstall old version: adb uninstall com.example.letsbunk
+- Enable "Install from Unknown Sources"
+- Check device is connected: adb devices
+- Try different USB cable/port
+
+Problem: App shows "Disconnected"
+Solution:
+- Check server is running
+- Verify IP address in NetworkManager.kt
+- Check device is on same WiFi network
+- Check firewall isn't blocking port 3000
+
+9.3 ADMIN PANEL ISSUES
+----------------------
+Problem: Admin panel won't start
+Solution:
+- Check Java installed: java -version
+- Check json.jar exists in admin panel folder
+- Recompile: javac -cp ".;json.jar" AdvancedAdminPanel.java
+
+Problem: "Cannot connect to server"
+Solution:
+- Check server is running
+- Verify SERVER_URL in AdvancedAdminPanel.java
+- Test server: curl http://localhost:3000/api/health
+
+9.4 NETWORK ISSUES
+------------------
+Problem: Mobile device can't connect to server
+Solution:
+- Check device and PC on same WiFi
+- Get PC IP: ipconfig (Windows) or ifconfig (macOS/Linux)
+- Update IP in NetworkManager.kt
+- Rebuild and reinstall APK
+- Check firewall: Run FIX_FIREWALL.bat as administrator
+
+Problem: Firewall blocking connections
+Solution:
+- Windows: Run FIX_FIREWALL.bat as administrator
+- Or manually: Control Panel → Firewall → Allow app
+- Add rule for Node.js on port 3000
+
+================================================================================
+10. NETWORK CONFIGURATION
+================================================================================
+
+10.1 FIREWALL CONFIGURATION
+---------------------------
+Windows:
+1. Run as Administrator: FIX_FIREWALL.bat
+   OR
+2. Manual configuration:
+   - Open Windows Defender Firewall
+   - Advanced Settings
+   - Inbound Rules → New Rule
+   - Port → TCP → 3000
+   - Allow the connection
+   - Name: "LetsBunk Server"
+
+macOS:
+1. System Preferences → Security & Privacy → Firewall
+2. Firewall Options
+3. Add Node.js
+4. Allow incoming connections
+
+Linux:
+sudo ufw allow 3000/tcp
+sudo ufw reload
+
+10.2 WIFI CONFIGURATION
+-----------------------
+1. Ensure all devices on same WiFi network
+
+2. Get WiFi BSSID (MAC address):
+   Windows: netsh wlan show interfaces
+   macOS: /System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I
+   Linux: iwconfig
+
+3. Update BSSID in server if needed:
+   - Open admin panel
+   - Go to WiFi & Location settings
+   - Update authorized BSSID
+
+10.3 PORT FORWARDING (Optional)
+--------------------------------
+For remote access:
+1. Access router admin panel (usually 192.168.1.1)
+2. Find Port Forwarding section
+3. Forward external port 3000 to internal IP:3000
+4. Use external IP for remote connections
+
+================================================================================
+QUICK REFERENCE COMMANDS
+================================================================================
+
+SERVER:
+  Start: node server.js
+  Stop: Ctrl+C
+  Restart: Ctrl+C then node server.js
+
+ANDROID APP:
+  Build: gradlew assembleDebug
+  Install: adb install -r app/build/outputs/apk/debug/app-debug.apk
+  Launch: adb shell am start -n com.example.letsbunk/.MainActivity
+  Logs: adb logcat -s NetworkManager:D MainActivity:D
+
+ADMIN PANEL:
+  Run: java -cp ".;json.jar" AdvancedAdminPanel
+  Compile: javac -cp ".;json.jar" AdvancedAdminPanel.java
+
+MONGODB:
+  Start: mongod (or service start)
+  Shell: mongosh
+  Stop: Ctrl+C (or service stop)
+
+GIT:
+  Clone: git clone https://github.com/adityasingh03rajput/khatam-aaj.git
+  Pull: git pull origin main
+  Status: git status
+
+================================================================================
+SUPPORT & RESOURCES
+================================================================================
+
+Documentation:
+- Node.js: https://nodejs.org/docs/
+- Android: https://developer.android.com/docs
+- MongoDB: https://docs.mongodb.com/
+- Socket.IO: https://socket.io/docs/
+
+Common Issues:
+- Check README.md in project root
+- Check server logs for errors
+- Check adb logcat for mobile app errors
+- Check admin panel console for Java errors
+
+GitHub Repository:
+https://github.com/adityasingh03rajput/khatam-aaj
+
+================================================================================
+END OF SETUP GUIDE
+================================================================================
+
+Last Updated: October 2025
+Version: 1.0
+
+For additional help, check the project README or create an issue on GitHub.
