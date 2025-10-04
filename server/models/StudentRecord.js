@@ -1,13 +1,21 @@
 const mongoose = require('mongoose');
 
 const studentRecordSchema = new mongoose.Schema({
-    rollNumber: {
+    studentId: {
         type: String,
         required: true,
         unique: true,
         trim: true,
-        uppercase: true,
         index: true
+    },
+    rollNumber: {
+        type: String,
+        trim: true,
+        uppercase: true
+    },
+    rollNo: {
+        type: String,
+        trim: true
     },
     name: {
         type: String,
@@ -16,43 +24,31 @@ const studentRecordSchema = new mongoose.Schema({
     },
     email: {
         type: String,
-        required: true,
-        unique: true,
         lowercase: true,
         trim: true,
-        validate: {
-            validator: function(v) {
-                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-            },
-            message: props => `${props.value} is not a valid email!`
-        }
+        sparse: true
     },
     phone: {
         type: String,
-        required: true,
-        validate: {
-            validator: function(v) {
-                return /^[0-9]{10}$/.test(v);
-            },
-            message: props => `${props.value} is not a valid 10-digit phone number!`
-        }
+        trim: true
     },
     department: {
         type: String,
-        required: true,
         index: true,
         trim: true
     },
     semester: {
         type: String,
-        required: true,
         index: true,
         trim: true
     },
     branch: {
         type: String,
-        required: true,
         index: true,
+        trim: true
+    },
+    batch: {
+        type: String,
         trim: true
     },
     section: {
@@ -75,12 +71,27 @@ const studentRecordSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    parentName: {
+        type: String,
+        trim: true
+    },
+    parentPhone: {
+        type: String,
+        trim: true
+    },
     guardianName: {
         type: String,
         trim: true
     },
     guardianPhone: {
         type: String
+    },
+    password: {
+        type: String
+    },
+    role: {
+        type: String,
+        default: 'student'
     },
     isActive: {
         type: Boolean,

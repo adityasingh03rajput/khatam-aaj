@@ -4,13 +4,14 @@
   "description": "Real-time attendance and timetable management server",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "db:init": "node scripts/initDatabase.js",
-    "db:clear": "node scripts/clearDatabase.js",
-    "db:backup": "node scripts/backupDatabase.js",
-    "db:verify": "node scripts/verifyDatabase.js"
+    "db": "node scripts/databaseManager.js",
+    "db:init": "node scripts/databaseManager.js init",
+    "db:seed": "node scripts/databaseManager.js seed",
+    "db:backup": "node scripts/databaseManager.js backup",
+    "db:verify": "node scripts/databaseManager.js verify",
+    "db:reset": "node scripts/databaseManager.js reset --confirm"
   },
   "keywords": [
     "attendance",
@@ -21,6 +22,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "mongoose": "^8.18.3",

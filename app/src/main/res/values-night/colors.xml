@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Night mode automatically uses these colors -->
+    <color name="background">#121212</color>
+    <color name="surface">#1E1E1E</color>
+    <color name="card">#2D2D2D</color>
+    <color name="text_primary">#E0E0E0</color>
+    <color name="text_secondary">#A0A0A0</color>
+    <color name="divider">#333333</color>
+    
+    <!-- Legacy color names for compatibility -->
+    <color name="card_background">#2D2D2D</color>
+    <color name="background_light">#121212</color>
+    <color name="success_light">#1B3A1F</color>
+    <color name="warning_light">#3A2F1B</color>
+    <color name="info_light">#1B2A3A</color>
+    <color name="background_gradient_start">#121212</color>
+    <color name="background_gradient_end">#1E1E1E</color>
+</resources>

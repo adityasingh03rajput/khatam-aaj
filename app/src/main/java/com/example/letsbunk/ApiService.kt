@@ -43,18 +43,8 @@ data class UpdateAttendanceResponse(
     val student: StudentAttendanceServer
 )
 
-data class StudentAttendanceServer(
-    val id: String,
-    val name: String,
-    val department: String,
-    val room: String,
-    var timeRemaining: Int,
-    var timerState: String, // running, paused, completed
-    var attendanceStatus: String, // attending, absent, attended
-    var isPresent: Boolean,
-    val startTime: String,
-    val bssid: String
-)
+// Use unified StudentData model instead of duplicate
+typealias StudentAttendanceServer = StudentData
 
 data class AttendanceListResponse(
     val students: List<StudentAttendanceServer>,
@@ -139,19 +129,19 @@ interface ApiService {
     
     // Tabular Timetable endpoints
     @GET("api/timetable-table/{branch}/{semester}")
-    fun getTabularTimetable(
+    fun getTimetableTable(
         @Path("branch") branch: String,
         @Path("semester") semester: String
-    ): Call<TimetableTableResponse>
+    ): Call<TimetableResponse>
     
     @POST("api/timetable-table")
-    fun saveTabularTimetable(@Body request: TimetableTableRequest): Call<TimetableTableResponse>
+    fun saveTimetableTable(@Body request: TimetableRequest): Call<TimetableResponse>
     
     @DELETE("api/timetable-table/{branch}/{semester}")
-    fun deleteTabularTimetable(
+    fun deleteTimetableTable(
         @Path("branch") branch: String,
         @Path("semester") semester: String
-    ): Call<TimetableTableResponse>
+    ): Call<TimetableResponse>
     
     // BSSID Management endpoints
     @PUT("api/config/bssid")
@@ -313,20 +303,20 @@ data class ServerStatisticsResponse(
     val timestamp: String
 )
 
-// Timetable Table Data Classes
-data class TimetableTableRequest(
+// Timetable Table Data Classes (matching web frontend structure)
+data class TimetableRequest(
     val branch: String,
     val semester: String,
     val periods: List<Period>
 )
 
-data class TimetableTableResponse(
+data class TimetableResponse(
     val success: Boolean,
     val message: String? = null,
-    val timetable: TimetableTable? = null
+    val timetable: TimetableData? = null
 )
 
-data class TimetableTable(
+data class TimetableData(
     val branch: String,
     val semester: String,
     val periods: List<Period>
@@ -336,16 +326,19 @@ data class Period(
     val periodNumber: Int,
     val startTime: String,
     val endTime: String,
-    val monday: PeriodEntry? = null,
-    val tuesday: PeriodEntry? = null,
-    val wednesday: PeriodEntry? = null,
-    val thursday: PeriodEntry? = null,
-    val friday: PeriodEntry? = null,
-    val saturday: PeriodEntry? = null
+    val monday: PeriodEntry = PeriodEntry(),
+    val tuesday: PeriodEntry = PeriodEntry(),
+    val wednesday: PeriodEntry = PeriodEntry(),
+    val thursday: PeriodEntry = PeriodEntry(),
+    val friday: PeriodEntry = PeriodEntry(),
+    val saturday: PeriodEntry = PeriodEntry()
 )
 
 data class PeriodEntry(
-    val subject: String,
-    val room: String,
-    val teacher: String
-)
+    val subject: String = "",
+    val room: String = "",
+    val teacher: String = ""
+) {
+    fun isEmpty(): Boolean = subject.isEmpty() && room.isEmpty() && teacher.isEmpty()
+    fun isBreak(): Boolean = subject.equals("BREAK", ignoreCase = true)
+}

@@ -9,11 +9,18 @@ import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
 
+/**
+ * Enhanced data model for student attendance with random ring support
+ */
 data class StudentAttendanceWithRing(
-    val student: StudentAttendance,
+    val student: StudentData,
     var isRandomRingSelected: Boolean = false,
-    var ringStatus: String = "pending" // pending, accepted, rejected, student_confirmed
-)
+    var ringStatus: RingStatus = RingStatus.PENDING
+) {
+    enum class RingStatus {
+        PENDING, ACCEPTED, REJECTED, STUDENT_CONFIRMED
+    }
+}
 
 class AttendanceAdapter(
     private val onAccept: (String) -> Unit = {},
@@ -23,7 +30,7 @@ class AttendanceAdapter(
     private val students = mutableListOf<StudentAttendanceWithRing>()
     private val randomRingStudentNames = mutableSetOf<String>()
 
-    fun updateStudents(newStudents: List<StudentAttendance>) {
+    fun updateStudents(newStudents: List<StudentData>) {
         students.clear()
         students.addAll(newStudents.map { StudentAttendanceWithRing(it) })
         notifyDataSetChanged()
@@ -35,13 +42,13 @@ class AttendanceAdapter(
         students.forEach { 
             it.isRandomRingSelected = studentNames.contains(it.student.name)
             if (it.isRandomRingSelected) {
-                it.ringStatus = "pending"
+                it.ringStatus = StudentAttendanceWithRing.RingStatus.PENDING
             }
         }
         notifyDataSetChanged()
     }
 
-    fun updateRandomRingStatus(studentName: String, status: String) {
+    fun updateRandomRingStatus(studentName: String, status: StudentAttendanceWithRing.RingStatus) {
         students.find { it.student.name == studentName }?.let {
             it.ringStatus = status
             notifyDataSetChanged()
@@ -49,7 +56,8 @@ class AttendanceAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_attendance_enhanced, parent, false)
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_attendance_simple, parent, false)
         return ViewHolder(view)
     }
 
@@ -67,23 +75,21 @@ class AttendanceAdapter(
         
         holder.nameTextView.text = student.name
         holder.departmentTextView.text = student.department
-        holder.locationTextView.text = student.location
+        holder.locationTextView.text = student.room
         val minutes = student.timeRemaining / 60
         val seconds = student.timeRemaining % 60
         holder.timeRemainingTextView.text = String.format("%02d:%02d", minutes, seconds)
         
         // Display status based on attendanceStatus
         val statusText = when (student.attendanceStatus) {
-            "attending" -> "✓ Attending"
-            "absent" -> "⏸️ Absent (Paused)"
-            "attended" -> "✅ Attended"
-            else -> if (student.isPresent) "✓ Present" else "✗ Absent"
+            StudentData.AttendanceStatus.ATTENDING -> "✓ Attending"
+            StudentData.AttendanceStatus.ABSENT -> "⏸️ Absent (Paused)"
+            StudentData.AttendanceStatus.ATTENDED -> "✅ Attended"
         }
         val statusColor = when (student.attendanceStatus) {
-            "attending" -> "#4CAF50" // Green
-            "absent" -> "#FF9800" // Orange
-            "attended" -> "#2196F3" // Blue
-            else -> if (student.isPresent) "#4CAF50" else "#F44336"
+            StudentData.AttendanceStatus.ATTENDING -> "#4CAF50" // Green
+            StudentData.AttendanceStatus.ABSENT -> "#FF9800" // Orange
+            StudentData.AttendanceStatus.ATTENDED -> "#2196F3" // Blue
         }
         
         holder.statusTextView.text = statusText
@@ -94,7 +100,14 @@ class AttendanceAdapter(
             holder.randomRingBadge.visibility = View.VISIBLE
             
             when (item.ringStatus) {
-                "pending" -> {
+                StudentAttendanceWithRing.RingStatus.STUDENT_CONFIRMED -> {
+                    holder.actionButtonsLayout.visibility = View.GONE
+                    holder.statusMessageTextView.visibility = View.VISIBLE
+                    holder.statusMessageTextView.text = "🔒 Confirmed by Student (Locked)"
+                    holder.statusMessageTextView.setTextColor(android.graphics.Color.parseColor("#2196F3"))
+                    holder.cardView.setCardBackgroundColor(android.graphics.Color.parseColor("#E3F2FD"))
+                }
+                StudentAttendanceWithRing.RingStatus.PENDING -> {
                     holder.actionButtonsLayout.visibility = View.VISIBLE
                     holder.statusMessageTextView.visibility = View.GONE
                     holder.cardView.setCardBackgroundColor(android.graphics.Color.parseColor("#FFF3E0"))
@@ -106,14 +119,14 @@ class AttendanceAdapter(
                         onReject(student.name)
                     }
                 }
-                "accepted" -> {
+                StudentAttendanceWithRing.RingStatus.ACCEPTED -> {
                     holder.actionButtonsLayout.visibility = View.GONE
                     holder.statusMessageTextView.visibility = View.VISIBLE
                     holder.statusMessageTextView.text = "✓ Accepted by Teacher"
                     holder.statusMessageTextView.setTextColor(android.graphics.Color.parseColor("#4CAF50"))
                     holder.cardView.setCardBackgroundColor(android.graphics.Color.parseColor("#E8F5E9"))
                 }
-                "rejected" -> {
+                StudentAttendanceWithRing.RingStatus.REJECTED -> {
                     holder.actionButtonsLayout.visibility = View.GONE
                     holder.statusMessageTextView.visibility = View.VISIBLE
                     holder.statusMessageTextView.text = "✗ Rejected by Teacher"
@@ -125,13 +138,6 @@ class AttendanceAdapter(
                     holder.resumeButton.setOnClickListener {
                         onResume(student.name)
                     }
-                }
-                "student_confirmed" -> {
-                    holder.actionButtonsLayout.visibility = View.GONE
-                    holder.statusMessageTextView.visibility = View.VISIBLE
-                    holder.statusMessageTextView.text = "🔒 Confirmed by Student (Locked)"
-                    holder.statusMessageTextView.setTextColor(android.graphics.Color.parseColor("#2196F3"))
-                    holder.cardView.setCardBackgroundColor(android.graphics.Color.parseColor("#E3F2FD"))
                 }
             }
         } else {

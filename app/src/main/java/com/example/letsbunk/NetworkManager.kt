@@ -11,14 +11,23 @@ import java.net.URISyntaxException
 object NetworkManager {
     
     // Server configuration - PC IP on same WiFi network
-    private const val SERVER_URL = "http://192.168.246.31:3000"
+    private const val SERVER_URL = "http://192.168.89.31:3000"
     private const val MAX_RETRY_ATTEMPTS = 3
     private const val RETRY_DELAY_MS = 2000L
+    private const val CACHE_DURATION_MS = 5 * 60 * 1000L // 5 minutes
     
     private var socket: Socket? = null
     private var isConnected = false
     private var reconnectAttempts = 0
     private var shouldReconnect = true
+    
+    // Simple cache for timetable data
+    private val timetableCache = mutableMapOf<String, CachedTimetable>()
+    
+    data class CachedTimetable(
+        val data: TimetableResponse,
+        val timestamp: Long
+    )
     
     // Retrofit instance with timeout configuration
     val apiService: ApiService by lazy {
@@ -401,6 +410,47 @@ object NetworkManager {
                 callback(data)
             } catch (e: Exception) {
                 Log.e("NetworkManager", "Error parsing random ring accepted", e)
+            }
+        }
+    }
+    
+    // Cache utility methods
+    fun getCachedTimetable(branch: String, semester: String): TimetableResponse? {
+        val key = "${branch}_${semester}"
+        val cached = timetableCache[key]
+        
+        return if (cached != null && (System.currentTimeMillis() - cached.timestamp) < CACHE_DURATION_MS) {
+            Log.d("NetworkManager", "Using cached timetable for $key")
+            cached.data
+        } else {
+            if (cached != null) {
+                Log.d("NetworkManager", "Cache expired for $key")
+                timetableCache.remove(key)
+            }
+            null
+        }
+    }
+    
+    fun cacheTimetable(branch: String, semester: String, data: TimetableResponse) {
+        val key = "${branch}_${semester}"
+        timetableCache[key] = CachedTimetable(data, System.currentTimeMillis())
+        Log.d("NetworkManager", "Cached timetable for $key")
+    }
+    
+    fun clearTimetableCache() {
+        timetableCache.clear()
+        Log.d("NetworkManager", "Timetable cache cleared")
+    }
+    
+    // Biometric registration listener
+    fun onBiometricRegistrationRequest(callback: (JSONObject) -> Unit) {
+        socket?.on("biometric-registration-request") { args ->
+            try {
+                val data = args[0] as JSONObject
+                Log.d("NetworkManager", "Biometric registration request received: $data")
+                callback(data)
+            } catch (e: Exception) {
+                Log.e("NetworkManager", "Error parsing biometric registration request", e)
             }
         }
     }

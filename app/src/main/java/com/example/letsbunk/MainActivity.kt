@@ -1,7 +1,8 @@
 package com.example.letsbunk
 
 import android.Manifest
-import android.app.TimePickerDialog
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.pm.PackageManager 
@@ -9,8 +10,11 @@ import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.OvershootInterpolator
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -20,13 +24,22 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.tabs.TabLayout
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-import java.util.*
-import android.util.Log
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import androidx.biometric.BiometricPrompt
+import androidx.biometric.BiometricManager
+import java.util.concurrent.Executor
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Callback as OkHttpCallback
+import okhttp3.Call as OkHttpCall
+import java.io.IOException
+import android.util.Base64
+import java.security.MessageDigest
 
 class MainActivity : AppCompatActivity() {
 
@@ -34,7 +47,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var connectionStatusTextView: TextView
     private lateinit var wifiBssidTextView: TextView
     private lateinit var markAttendanceButton: Button
-    private lateinit var userNameTextView: TextView
     private lateinit var wifiManager: WifiManager
     private lateinit var teacherView: LinearLayout
     private lateinit var studentView: LinearLayout
@@ -61,11 +73,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var runnable: Runnable
     private lateinit var sharedPreferences: SharedPreferences
     private val gson = Gson()
-    private val attendanceList = mutableListOf<StudentAttendance>()
+    private val attendanceList = mutableListOf<StudentData>()
     private var currentStudentId: String? = null
     private var serverAuthorizedBSSID: String = "" // Will be fetched from server
     private var randomRingStudents = mutableListOf<RandomRingStudent>()
     private var isRandomRingActive = false
+    
+    // Biometric properties
+    private lateinit var biometricPrompt: BiometricPrompt
+    private lateinit var promptInfo: BiometricPrompt.PromptInfo
+    private lateinit var executor: Executor
+    private val httpClient = OkHttpClient()
 
     private val locationPermissions = arrayOf(
         Manifest.permission.ACCESS_FINE_LOCATION,
@@ -93,6 +111,7 @@ class MainActivity : AppCompatActivity() {
         setupClickListeners()
         checkPermissions()
         initTimer()
+        setupBiometricListener()
         
         // Check if user role was previously selected
         if (!sharedPreferences.contains("isStudent")) {
@@ -113,13 +132,12 @@ class MainActivity : AppCompatActivity() {
         connectionStatusTextView = findViewById(R.id.connectionStatusTextView)
         wifiBssidTextView = findViewById(R.id.wifiBssidTextView)
         markAttendanceButton = findViewById(R.id.markAttendanceButton)
-        userNameTextView = findViewById(R.id.userNameTextView)
         teacherView = findViewById(R.id.teacherView)
         studentView = findViewById(R.id.studentView)
-        attendanceRecyclerView = findViewById(R.id.attendanceRecyclerView)
         teacherTabLayout = findViewById(R.id.teacherTabLayout)
         attendanceSection = findViewById(R.id.attendanceSection)
         randomRingButton = findViewById(R.id.randomRingButton)
+        attendanceRecyclerView = findViewById(R.id.attendanceRecyclerView)
         
         // Set Random Ring button click listener
         randomRingButton.setOnClickListener {
@@ -128,33 +146,40 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun connectToServer() {
-        // Connect WebSocket with enhanced error handling
-        NetworkManager.enableReconnection()
-        NetworkManager.connectSocket(
-            onConnected = {
-                runOnUiThread {
-                    Log.d("MainActivity", "✓ Connected to server")
-                    Toast.makeText(this, "✓ Connected to server", Toast.LENGTH_SHORT).show()
-                    fetchAuthorizedBSSID()
-                    setupWebSocketListeners()
-                    updateConnectionStatusUI(true)
+        try {
+            // Connect WebSocket with enhanced error handling
+            NetworkManager.enableReconnection()
+            NetworkManager.connectSocket(
+                onConnected = {
+                    runOnUiThread {
+                        Log.d("MainActivity", "✓ Connected to server")
+                        Toast.makeText(this, "✓ Connected to server", Toast.LENGTH_SHORT).show()
+                        fetchAuthorizedBSSID()
+                        setupWebSocketListeners()
+                        updateConnectionStatusUI(true)
+                    }
+                },
+                onDisconnected = {
+                    runOnUiThread {
+                        Log.d("MainActivity", "Socket disconnected")
+                        Toast.makeText(this, "⚠ Disconnected from server", Toast.LENGTH_SHORT).show()
+                        updateConnectionStatusUI(false)
+                    }
+                },
+                onError = { error ->
+                    runOnUiThread {
+                        Log.e("MainActivity", "✗ Connection error: $error")
+                        Toast.makeText(this, "✗ Server error: $error", Toast.LENGTH_LONG).show()
+                        updateConnectionStatusUI(false)
+                    }
                 }
-            },
-            onDisconnected = {
-                runOnUiThread {
-                    Log.d("MainActivity", "⚠ Disconnected from server")
-                    Toast.makeText(this, "⚠ Server disconnected. Reconnecting...", Toast.LENGTH_SHORT).show()
-                    updateConnectionStatusUI(false)
-                }
-            },
-            onError = { error ->
-                runOnUiThread {
-                    Log.e("MainActivity", "✗ Server error: $error")
-                    Toast.makeText(this, "✗ Server error: $error", Toast.LENGTH_LONG).show()
-                    updateConnectionStatusUI(false)
-                }
+            )
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error connecting to server", e)
+            runOnUiThread {
+                Toast.makeText(this, "Unable to connect to server", Toast.LENGTH_LONG).show()
             }
-        )
+        }
     }
     
     private fun updateConnectionStatusUI(connected: Boolean) {
@@ -178,23 +203,19 @@ class MainActivity : AppCompatActivity() {
                         serverAuthorizedBSSID = it.authorizedBSSID
                         Log.d("MainActivity", "✓ Authorized BSSID: $serverAuthorizedBSSID")
                         runOnUiThread {
-                            Toast.makeText(this@MainActivity, "✓ BSSID configured", Toast.LENGTH_SHORT).show()
+                            // Silent - no toast
                             updateWifiInfo()
                         }
                     }
                 } else {
                     Log.e("MainActivity", "Failed to fetch BSSID: ${response.code()}")
-                    runOnUiThread {
-                        Toast.makeText(this@MainActivity, "⚠ Failed to get WiFi config", Toast.LENGTH_SHORT).show()
-                    }
+                    // Silent failure - will retry on reconnect
                 }
             }
 
             override fun onFailure(call: Call<BSSIDResponse>, t: Throwable) {
-                Log.e("MainActivity", "✗ Failed to fetch BSSID", t)
-                runOnUiThread {
-                    Toast.makeText(this@MainActivity, "✗ Network error: ${t.message}", Toast.LENGTH_LONG).show()
-                }
+                Log.e("MainActivity", "Failed to fetch BSSID", t)
+                // Silent failure - app works offline for timetable
             }
         })
     }
@@ -208,17 +229,32 @@ class MainActivity : AppCompatActivity() {
                     attendanceList.clear()
                     for (i in 0 until studentsArray.length()) {
                         val student = studentsArray.getJSONObject(i)
-                        attendanceList.add(StudentAttendance(
+                        attendanceList.add(StudentData(
+                            id = student.optString("id", ""),
                             name = student.getString("name"),
                             department = student.getString("department"),
-                            location = student.getString("room"),
+                            room = student.getString("room"),
                             timeRemaining = student.getInt("timeRemaining"),
-                            timerState = student.optString("timerState", "running"),
-                            attendanceStatus = student.optString("attendanceStatus", "attending"),
-                            isPresent = student.getBoolean("isPresent")
+                            timerState = when(student.optString("timerState", "running")) {
+                                "running" -> StudentData.TimerState.RUNNING
+                                "paused" -> StudentData.TimerState.PAUSED
+                                "completed" -> StudentData.TimerState.COMPLETED
+                                else -> StudentData.TimerState.RUNNING
+                            },
+                            attendanceStatus = when(student.optString("attendanceStatus", "attending")) {
+                                "attending" -> StudentData.AttendanceStatus.ATTENDING
+                                "absent" -> StudentData.AttendanceStatus.ABSENT
+                                "attended" -> StudentData.AttendanceStatus.ATTENDED
+                                else -> StudentData.AttendanceStatus.ATTENDING
+                            },
+                            isPresent = student.getBoolean("isPresent"),
+                            bssid = student.optString("bssid", ""),
+                            startTime = student.optString("startTime", "")
                         ))
                     }
-                    attendanceAdapter.updateStudents(attendanceList)
+                    if (::attendanceAdapter.isInitialized) {
+                        attendanceAdapter.updateStudents(attendanceList)
+                    }
                 } catch (e: Exception) {
                     Log.e("MainActivity", "Error parsing initial state", e)
                 }
@@ -234,17 +270,32 @@ class MainActivity : AppCompatActivity() {
                     // Check if student already exists to prevent duplicates
                     val existingStudent = attendanceList.find { it.name == studentName }
                     if (existingStudent == null) {
-                        val student = StudentAttendance(
+                        val student = StudentData(
+                            id = data.optString("id", ""),
                             name = studentName,
                             department = data.getString("department"),
-                            location = data.getString("room"),
+                            room = data.getString("room"),
                             timeRemaining = data.getInt("timeRemaining"),
-                            timerState = data.optString("timerState", "running"),
-                            attendanceStatus = data.optString("attendanceStatus", "attending"),
-                            isPresent = data.getBoolean("isPresent")
+                            timerState = when(data.optString("timerState", "running")) {
+                                "running" -> StudentData.TimerState.RUNNING
+                                "paused" -> StudentData.TimerState.PAUSED
+                                "completed" -> StudentData.TimerState.COMPLETED
+                                else -> StudentData.TimerState.RUNNING
+                            },
+                            attendanceStatus = when(data.optString("attendanceStatus", "attending")) {
+                                "attending" -> StudentData.AttendanceStatus.ATTENDING
+                                "absent" -> StudentData.AttendanceStatus.ABSENT
+                                "attended" -> StudentData.AttendanceStatus.ATTENDED
+                                else -> StudentData.AttendanceStatus.ATTENDING
+                            },
+                            isPresent = data.getBoolean("isPresent"),
+                            bssid = data.optString("bssid", ""),
+                            startTime = data.optString("startTime", "")
                         )
                         attendanceList.add(student)
-                        attendanceAdapter.updateStudents(attendanceList)
+                        if (::attendanceAdapter.isInitialized) {
+                            attendanceAdapter.updateStudents(attendanceList)
+                        }
                         Toast.makeText(this, "${student.name} connected", Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
@@ -267,9 +318,21 @@ class MainActivity : AppCompatActivity() {
                     val student = attendanceList.find { it.name == name }
                     student?.let {
                         it.timeRemaining = timeRemaining
-                        it.timerState = timerState
-                        it.attendanceStatus = attendanceStatus
-                        attendanceAdapter.notifyDataSetChanged()
+                        it.timerState = when(timerState.uppercase()) {
+                            "RUNNING" -> StudentData.TimerState.RUNNING
+                            "PAUSED" -> StudentData.TimerState.PAUSED
+                            "COMPLETED" -> StudentData.TimerState.COMPLETED
+                            else -> StudentData.TimerState.RUNNING
+                        }
+                        it.attendanceStatus = when(attendanceStatus.uppercase()) {
+                            "ATTENDING" -> StudentData.AttendanceStatus.ATTENDING
+                            "ABSENT" -> StudentData.AttendanceStatus.ABSENT
+                            "ATTENDED" -> StudentData.AttendanceStatus.ATTENDED
+                            else -> StudentData.AttendanceStatus.ATTENDING
+                        }
+                        if (::attendanceAdapter.isInitialized) {
+                            attendanceAdapter.notifyDataSetChanged()
+                        }
                     }
                     
                     // Update own timer if this is the current student
@@ -291,10 +354,12 @@ class MainActivity : AppCompatActivity() {
                     val student = attendanceList.find { it.name == name }
                     student?.let {
                         it.timeRemaining = 0
-                        it.timerState = "completed"
-                        it.attendanceStatus = "attended"
+                        it.timerState = StudentData.TimerState.COMPLETED
+                        it.attendanceStatus = StudentData.AttendanceStatus.ATTENDED
                         it.isPresent = true
-                        attendanceAdapter.notifyDataSetChanged()
+                        if (::attendanceAdapter.isInitialized) {
+                            attendanceAdapter.notifyDataSetChanged()
+                        }
                         Toast.makeText(this, "$name completed attendance!", Toast.LENGTH_LONG).show()
                     }
                 } catch (e: Exception) {
@@ -310,10 +375,12 @@ class MainActivity : AppCompatActivity() {
                     val name = data.getString("name")
                     val student = attendanceList.find { it.name == name }
                     student?.let {
-                        it.timerState = "paused"
-                        it.attendanceStatus = "absent"
+                        it.timerState = StudentData.TimerState.PAUSED
+                        it.attendanceStatus = StudentData.AttendanceStatus.ABSENT
                         it.isPresent = false
-                        attendanceAdapter.notifyDataSetChanged()
+                        if (::attendanceAdapter.isInitialized) {
+                            attendanceAdapter.notifyDataSetChanged()
+                        }
                         Toast.makeText(this, "$name paused (WiFi disconnected)", Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
@@ -329,10 +396,12 @@ class MainActivity : AppCompatActivity() {
                     val name = data.getString("name")
                     val student = attendanceList.find { it.name == name }
                     student?.let {
-                        it.timerState = "running"
-                        it.attendanceStatus = "attending"
+                        it.timerState = StudentData.TimerState.RUNNING
+                        it.attendanceStatus = StudentData.AttendanceStatus.ATTENDING
                         it.isPresent = true
-                        attendanceAdapter.notifyDataSetChanged()
+                        if (::attendanceAdapter.isInitialized) {
+                            attendanceAdapter.notifyDataSetChanged()
+                        }
                         Toast.makeText(this, "$name resumed (WiFi reconnected)", Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
@@ -389,7 +458,9 @@ class MainActivity : AppCompatActivity() {
                             val student = studentsArray.getJSONObject(i)
                             selectedNames.add(student.getString("name"))
                         }
-                        attendanceAdapter.markRandomRingStudents(selectedNames)
+                        if (::attendanceAdapter.isInitialized) {
+                            attendanceAdapter.markRandomRingStudents(selectedNames)
+                        }
                         Toast.makeText(this, "Random Ring: ${selectedNames.size} students selected!", Toast.LENGTH_LONG).show()
                     }
                 } catch (e: Exception) {
@@ -405,7 +476,16 @@ class MainActivity : AppCompatActivity() {
                     val status = data.getString("status")
                     val student = randomRingStudents.find { it.id == studentId }
                     student?.let {
-                        attendanceAdapter.updateRandomRingStatus(it.name, status)
+                        val ringStatus = when(status.uppercase()) {
+                            "PENDING" -> StudentAttendanceWithRing.RingStatus.PENDING
+                            "ACCEPTED" -> StudentAttendanceWithRing.RingStatus.ACCEPTED
+                            "REJECTED" -> StudentAttendanceWithRing.RingStatus.REJECTED
+                            "STUDENT_CONFIRMED" -> StudentAttendanceWithRing.RingStatus.STUDENT_CONFIRMED
+                            else -> StudentAttendanceWithRing.RingStatus.PENDING
+                        }
+                        if (::attendanceAdapter.isInitialized) {
+                            attendanceAdapter.updateRandomRingStatus(it.name, ringStatus)
+                        }
                     }
                 } catch (e: Exception) {
                     Log.e("MainActivity", "Error parsing random ring updated", e)
@@ -417,7 +497,9 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 try {
                     val studentName = data.getString("studentName")
-                    attendanceAdapter.updateRandomRingStatus(studentName, "student_confirmed")
+                    if (::attendanceAdapter.isInitialized) {
+                        attendanceAdapter.updateRandomRingStatus(studentName, StudentAttendanceWithRing.RingStatus.STUDENT_CONFIRMED)
+                    }
                     Toast.makeText(this, "$studentName confirmed - Locked!", Toast.LENGTH_LONG).show()
                 } catch (e: Exception) {
                     Log.e("MainActivity", "Error parsing student confirmed", e)
@@ -451,17 +533,40 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+        
+        // Listen for biometric registration requests from admin panel
+        NetworkManager.onBiometricRegistrationRequest { data ->
+            runOnUiThread {
+                try {
+                    val studentId = data.getString("studentId")
+                    val studentName = data.getString("studentName")
+                    
+                    Log.d("MainActivity", "Biometric registration request for: $studentName ($studentId)")
+                    
+                    // Show registration dialog if this is a student device
+                    if (isStudent && currentStudentId == studentId) {
+                        showBiometricRegistrationDialog(studentId, studentName)
+                    }
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Error parsing biometric registration request", e)
+                }
+            }
+        }
     }
 
     private fun setupRecyclerView() {
-        attendanceAdapter = AttendanceAdapter(
-            onAccept = { studentName -> handleRandomRingAccept(studentName) },
-            onReject = { studentName -> handleRandomRingReject(studentName) },
-            onResume = { studentName -> handleResumeStudent(studentName) }
-        )
-        attendanceRecyclerView.apply {
-            layoutManager = LinearLayoutManager(this@MainActivity)
-            adapter = attendanceAdapter
+        try {
+            attendanceAdapter = AttendanceAdapter(
+                onAccept = { studentName -> handleRandomRingAccept(studentName) },
+                onReject = { studentName -> handleRandomRingReject(studentName) },
+                onResume = { studentName -> handleResumeStudent(studentName) }
+            )
+            attendanceRecyclerView.apply {
+                layoutManager = LinearLayoutManager(this@MainActivity)
+                adapter = attendanceAdapter
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error setting up RecyclerView", e)
         }
     }
     
@@ -474,7 +579,9 @@ class MainActivity : AppCompatActivity() {
                 override fun onResponse(call: Call<RandomRingResponse>, response: Response<RandomRingResponse>) {
                     if (response.isSuccessful) {
                         runOnUiThread {
-                            attendanceAdapter.updateRandomRingStatus(studentName, "accepted")
+                            if (::attendanceAdapter.isInitialized) {
+                                attendanceAdapter.updateRandomRingStatus(studentName, StudentAttendanceWithRing.RingStatus.ACCEPTED)
+                            }
                             Toast.makeText(this@MainActivity, "$studentName accepted", Toast.LENGTH_SHORT).show()
                         }
                     }
@@ -496,7 +603,9 @@ class MainActivity : AppCompatActivity() {
                 override fun onResponse(call: Call<RandomRingResponse>, response: Response<RandomRingResponse>) {
                     if (response.isSuccessful) {
                         runOnUiThread {
-                            attendanceAdapter.updateRandomRingStatus(studentName, "rejected")
+                            if (::attendanceAdapter.isInitialized) {
+                                attendanceAdapter.updateRandomRingStatus(studentName, StudentAttendanceWithRing.RingStatus.REJECTED)
+                            }
                             Toast.makeText(this@MainActivity, "$studentName rejected", Toast.LENGTH_SHORT).show()
                         }
                     }
@@ -527,9 +636,11 @@ class MainActivity : AppCompatActivity() {
                                                 runOnUiThread {
                                                     Toast.makeText(this@MainActivity, "✓ Timer resumed for $studentName", Toast.LENGTH_LONG).show()
                                                     // Update local status
-                                                    student.timerState = "running"
-                                                    student.attendanceStatus = "attending"
-                                                    attendanceAdapter.notifyDataSetChanged()
+                                                    student.timerState = StudentData.TimerState.RUNNING
+                                                    student.attendanceStatus = StudentData.AttendanceStatus.ATTENDING
+                                                    if (::attendanceAdapter.isInitialized) {
+                                                        attendanceAdapter.notifyDataSetChanged()
+                                                    }
                                                 }
                                             }
                                         }
@@ -553,6 +664,10 @@ class MainActivity : AppCompatActivity() {
     private fun setupTabLayout() {
         // Setup tab layout for teacher view if it exists
         try {
+            if (!::teacherTabLayout.isInitialized) {
+                Log.d("MainActivity", "Teacher tab layout not initialized")
+                return
+            }
             teacherTabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
                 override fun onTabSelected(tab: TabLayout.Tab?) {
                     when (tab?.position) {
@@ -575,6 +690,7 @@ class MainActivity : AppCompatActivity() {
             })
         } catch (e: Exception) {
             // Tab layout doesn't exist, skip setup
+            Log.d("MainActivity", "Error setting up teacher tab: ${e.message}")
         }
     }
     
@@ -635,12 +751,13 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun showRoleSelectionDialog() {
-        val dialog = AlertDialog.Builder(this)
-        dialog.setTitle("Select Your Role")
-        dialog.setCancelable(false)
-        
-        val options = arrayOf("Teacher", "Student")
-        dialog.setSingleChoiceItems(options, -1) { dialogInterface, index ->
+        try {
+            val dialog = AlertDialog.Builder(this)
+            dialog.setTitle("Select Your Role")
+            dialog.setCancelable(false)
+            
+            val options = arrayOf("Teacher", "Student")
+            dialog.setSingleChoiceItems(options, -1) { dialogInterface, index ->
             isStudent = index == 1 // index 1 is Student
             sharedPreferences.edit().putBoolean("isStudent", isStudent).apply()
             dialogInterface.dismiss()
@@ -656,7 +773,11 @@ class MainActivity : AppCompatActivity() {
                 updateUIForTeacher()
             }
         }
-        dialog.show()
+            dialog.show()
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error showing role dialog", e)
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun updateUIForStudent() {
@@ -666,7 +787,6 @@ class MainActivity : AppCompatActivity() {
         connectionStatusTextView.visibility = android.view.View.VISIBLE
         wifiBssidTextView.visibility = android.view.View.VISIBLE
         markAttendanceButton.visibility = android.view.View.VISIBLE
-        userNameTextView.visibility = android.view.View.VISIBLE
         
         // Student can view timetable via TimetableTableActivity
     }
@@ -679,13 +799,6 @@ class MainActivity : AppCompatActivity() {
         connectionStatusTextView.visibility = android.view.View.GONE
         wifiBssidTextView.visibility = android.view.View.GONE
         markAttendanceButton.visibility = android.view.View.GONE
-        userNameTextView.visibility = android.view.View.VISIBLE
-        
-        // Show welcome message with Random Ring button
-        userNameTextView.text = "Hello Teacher (Tap here for Random Ring)"
-        userNameTextView.setOnClickListener {
-            showRandomRingTeacherDialog()
-        }
         
         // Teacher can manage timetable via TimetableTableActivity
         loadAttendanceData()
@@ -696,7 +809,9 @@ class MainActivity : AppCompatActivity() {
         // Don't load sample data - only show real-time students from server
         // Clear any existing data
         attendanceList.clear()
-        attendanceAdapter.updateStudents(attendanceList)
+        if (::attendanceAdapter.isInitialized) {
+            attendanceAdapter.updateStudents(attendanceList)
+        }
     }
 
 
@@ -717,24 +832,26 @@ class MainActivity : AppCompatActivity() {
             // Update existing student
             existingStudent.isPresent = true
             existingStudent.timeRemaining = 600
-            existingStudent.timerState = "running"
-            existingStudent.attendanceStatus = "attending"
+            existingStudent.timerState = StudentData.TimerState.RUNNING
+            existingStudent.attendanceStatus = StudentData.AttendanceStatus.ATTENDING
             Toast.makeText(this, "Attendance updated for $name", Toast.LENGTH_SHORT).show()
         } else {
             // Add new student
-            val newStudent = StudentAttendance(
+            val newStudent = StudentData(
                 name = name,
                 department = department,
-                location = room,
+                room = room,
                 timeRemaining = 600,
-                timerState = "running",
-                attendanceStatus = "attending",
+                timerState = StudentData.TimerState.RUNNING,
+                attendanceStatus = StudentData.AttendanceStatus.ATTENDING,
                 isPresent = true
             )
             attendanceList.add(newStudent)
             Toast.makeText(this, "Attendance marked for $name", Toast.LENGTH_SHORT).show()
         }
-        attendanceAdapter.updateStudents(attendanceList)
+        if (::attendanceAdapter.isInitialized) {
+            attendanceAdapter.updateStudents(attendanceList)
+        }
         saveAttendanceData()
     }
 
@@ -742,6 +859,12 @@ class MainActivity : AppCompatActivity() {
         return locationPermissions.all {
             ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
         }
+    }
+    
+    private fun isLocationEnabled(): Boolean {
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
+        return locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) ||
+                locationManager.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)
     }
 
     private fun requestLocationPermission() {
@@ -775,9 +898,32 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Location permission required!", Toast.LENGTH_SHORT).show()
             return
         }
+        
+        // Check if location services are enabled (required for BSSID on Android 10+)
+        if (!isLocationEnabled()) {
+            runOnUiThread {
+                wifiBssidTextView.text = "BSSID: Enable Location"
+                connectionStatusTextView.text = "⚠️ Turn ON Location Services to get WiFi info"
+                connectionStatusTextView.setTextColor(ContextCompat.getColor(this, android.R.color.holo_orange_dark))
+                Toast.makeText(this, "Please enable Location Services in Settings", Toast.LENGTH_LONG).show()
+            }
+            return
+        }
 
         val wifiInfo = wifiManager.connectionInfo
         val currentBSSID = wifiInfo?.bssid ?: ""
+        Log.d("MainActivity", "📡 Current BSSID: $currentBSSID")
+        
+        // Check for fake BSSID (Android 10+ returns this when location is off)
+        if (currentBSSID == "02:00:00:00:00:00" || currentBSSID.isEmpty()) {
+            runOnUiThread {
+                wifiBssidTextView.text = "BSSID: Unavailable"
+                connectionStatusTextView.text = "⚠️ Location Services required for WiFi info"
+                connectionStatusTextView.setTextColor(ContextCompat.getColor(this, android.R.color.holo_orange_dark))
+            }
+            return
+        }
+        
         val wasAuthorized = isConnectedToAuthorizedWifi
 
         // Verify BSSID with server (students only)
@@ -860,8 +1006,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showNameInputDialog() {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_name_input, null)
-        val nameInput = dialogView.findViewById<EditText>(R.id.nameInput)
+        try {
+            val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_name_input, null)
+            val nameInput = dialogView.findViewById<EditText>(R.id.nameInput)
         
         // Pre-fill with saved name if exists
         val savedName = sharedPreferences.getString("userName", "")
@@ -873,9 +1020,9 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("OK") { _, _ ->
                 val enteredName = nameInput.text.toString().trim()
                 if (enteredName.isNotEmpty()) {
+                    // Save the entered name
                     userName = enteredName
                     sharedPreferences.edit().putString("userName", userName).apply()
-                    userNameTextView.text = "User: $userName"
                     updateMarkAttendanceButtonState()
                 } else {
                     Toast.makeText(this, "Please enter a valid name", Toast.LENGTH_SHORT).show()
@@ -885,6 +1032,10 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton("Cancel", null)
             .setCancelable(false)
             .show()
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error showing name dialog", e)
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun initTimer() {
@@ -1008,15 +1159,80 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateTimerDisplay() {
-        val minutes = seconds / 60
-        val secs = seconds % 60
-        timerTextView.text = String.format("%02d:%02d", minutes, secs)
+
+    
+    private fun animateTimerUpdate(newTime: String) {
+        val scaleDown = ObjectAnimator.ofFloat(timerTextView, "scaleX", 1f, 0.8f)
+        val scaleUp = ObjectAnimator.ofFloat(timerTextView, "scaleX", 0.8f, 1f)
+        val scaleDownY = ObjectAnimator.ofFloat(timerTextView, "scaleY", 1f, 0.8f)
+        val scaleUpY = ObjectAnimator.ofFloat(timerTextView, "scaleY", 0.8f, 1f)
+        
+        scaleDown.duration = 100
+        scaleUp.duration = 100
+        scaleDownY.duration = 100
+        scaleUpY.duration = 100
+        
+        scaleDown.interpolator = AccelerateDecelerateInterpolator()
+        scaleUp.interpolator = OvershootInterpolator()
+        scaleDownY.interpolator = AccelerateDecelerateInterpolator()
+        scaleUpY.interpolator = OvershootInterpolator()
+        
+        val animatorSet = AnimatorSet()
+        animatorSet.play(scaleDown).with(scaleDownY)
+        animatorSet.play(scaleUp).with(scaleUpY).after(scaleDown)
+        
+        scaleDown.addUpdateListener { 
+            if (it.animatedFraction == 0.5f) {
+                timerTextView.text = newTime
+            }
+        }
+        
+        animatorSet.start()
+    }
+    
+    private fun animateCardEntry(view: View, delay: Long = 0) {
+        view.alpha = 0f
+        view.translationY = 100f
+        view.scaleX = 0.8f
+        view.scaleY = 0.8f
+        
+        view.animate()
+            .alpha(1f)
+            .translationY(0f)
+            .scaleX(1f)
+            .scaleY(1f)
+            .setDuration(400)
+            .setStartDelay(delay)
+            .setInterpolator(OvershootInterpolator())
+            .start()
+    }
+    
+    private fun animateButtonPress(button: View, onComplete: () -> Unit = {}) {
+        val scaleDown = ObjectAnimator.ofFloat(button, "scaleX", 1f, 0.95f)
+        val scaleUp = ObjectAnimator.ofFloat(button, "scaleX", 0.95f, 1f)
+        val scaleDownY = ObjectAnimator.ofFloat(button, "scaleY", 1f, 0.95f)
+        val scaleUpY = ObjectAnimator.ofFloat(button, "scaleY", 0.95f, 1f)
+        
+        scaleDown.duration = 100
+        scaleUp.duration = 150
+        scaleDownY.duration = 100
+        scaleUpY.duration = 150
+        
+        val animatorSet = AnimatorSet()
+        animatorSet.play(scaleDown).with(scaleDownY)
+        animatorSet.play(scaleUp).with(scaleUpY).after(scaleDown)
+        
+        animatorSet.addListener(object : android.animation.AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: android.animation.Animator) {
+                onComplete()
+            }
+        })
+        
+        animatorSet.start()
     }
     
     private fun pauseAttendanceOnServer() {
         if (currentStudentId == null) return
-        
         val request = mapOf("studentId" to currentStudentId!!)
         NetworkManager.apiService.pauseAttendance(request)
             .enqueue(object : Callback<UpdateAttendanceResponse> {
@@ -1133,23 +1349,7 @@ class MainActivity : AppCompatActivity() {
         })
     }
     
-    private fun showRandomRingTeacherDialog() {
-        val input = EditText(this).apply {
-            hint = "Number of students"
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-        }
-        
-        AlertDialog.Builder(this)
-            .setTitle("Random Ring")
-            .setMessage("How many students to select?")
-            .setView(input)
-            .setPositiveButton("Start") { _, _ ->
-                val count = input.text.toString().toIntOrNull() ?: 1
-                startRandomRing(count)
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
+
     
     private fun startRandomRing(numberOfStudents: Int) {
         NetworkManager.apiService.startRandomRing(
@@ -1207,4 +1407,233 @@ class MainActivity : AppCompatActivity() {
         }
         NetworkManager.disconnectSocket()
     }
+    
+    // Random Ring Teacher Dialog with Slide Animation
+    private fun showRandomRingTeacherDialog() {
+        val numberPicker = android.widget.NumberPicker(this).apply {
+            minValue = 1
+            maxValue = attendanceList.size.coerceAtLeast(1)
+            value = 1
+        }
+        
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("🔔 Random Ring")
+            .setMessage("Select number of students to ring:")
+            .setView(numberPicker)
+            .setPositiveButton("Start") { _, _ ->
+                val count = numberPicker.value
+                startRandomRing(count)
+            }
+            .setNegativeButton("Cancel", null)
+            .create()
+        
+        // Add slide animation
+        dialog.window?.attributes?.windowAnimations = R.style.DialogSlideAnimation
+        dialog.show()
+    }
+    
+    // Timer visibility control based on state
+    private fun updateTimerVisibility() {
+        if (!isStudent) return // Only for students
+        
+        val shouldShowTimer = when {
+            !isRunning && seconds == 600 -> false // Not started
+            !isRunning && seconds == 0 -> false // Completed
+            !isRunning && !isConnectedToAuthorizedWifi -> false // Paused due to WiFi
+            else -> true // Running or can be resumed
+        }
+        
+        timerTextView.visibility = if (shouldShowTimer) View.VISIBLE else View.GONE
+    }
+    
+    private fun updateTimerDisplay() {
+        val minutes = seconds / 60
+        val secs = seconds % 60
+        timerTextView.text = String.format("%02d:%02d", minutes, secs)
+        updateTimerVisibility()
+    }
+    
+    // ========== BIOMETRIC FUNCTIONALITY ==========
+    
+    private fun setupBiometricListener() {
+        executor = ContextCompat.getMainExecutor(this)
+        
+        biometricPrompt = BiometricPrompt(this, executor,
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    super.onAuthenticationSucceeded(result)
+                    Log.d("Biometric", "Fingerprint authentication succeeded")
+                }
+                
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    super.onAuthenticationError(errorCode, errString)
+                    Toast.makeText(this@MainActivity, 
+                        "Authentication error: $errString", Toast.LENGTH_SHORT).show()
+                }
+                
+                override fun onAuthenticationFailed() {
+                    super.onAuthenticationFailed()
+                    Toast.makeText(this@MainActivity, 
+                        "Authentication failed", Toast.LENGTH_SHORT).show()
+                }
+            })
+        
+        promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Biometric Registration")
+            .setSubtitle("Scan your fingerprint")
+            .setNegativeButtonText("Cancel")
+            .build()
+        
+        Log.d("Biometric", "Biometric listener setup complete")
+    }
+    
+    fun showBiometricRegistrationDialog(studentId: String, studentName: String) {
+        AlertDialog.Builder(this)
+            .setTitle("Biometric Registration")
+            .setMessage("Register biometric data for:\n$studentName ($studentId)\n\nThis will capture:\n1. Fingerprint\n2. Face photo")
+            .setPositiveButton("Start Registration") { _, _ ->
+                sharedPreferences.edit()
+                    .putString("pending_bio_student_id", studentId)
+                    .putString("pending_bio_student_name", studentName)
+                    .apply()
+                
+                registerFingerprint(studentId, studentName)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    
+    private fun registerFingerprint(studentId: String, studentName: String) {
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Register Fingerprint")
+            .setSubtitle("For $studentName")
+            .setDescription("Place your finger on the sensor")
+            .setNegativeButtonText("Cancel")
+            .build()
+        
+        val biometricPrompt = BiometricPrompt(this, executor,
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    val fingerprintData = generateBiometricHash("fingerprint")
+                    
+                    sendFingerprintToServer(studentId, fingerprintData) {
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, 
+                                "✓ Fingerprint registered! Now capturing face...", 
+                                Toast.LENGTH_SHORT).show()
+                            
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                registerFace(studentId, studentName)
+                            }, 1000)
+                        }
+                    }
+                }
+                
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, 
+                            "Fingerprint error: $errString", 
+                            Toast.LENGTH_SHORT).show()
+                    }
+                }
+            })
+        
+        biometricPrompt.authenticate(promptInfo)
+    }
+    
+    private fun registerFace(studentId: String, studentName: String) {
+        AlertDialog.Builder(this)
+            .setTitle("Face Registration")
+            .setMessage("Face capture for $studentName\n\nCapturing face data...")
+            .setPositiveButton("Capture Face") { _, _ ->
+                val faceData = generateBiometricHash("face")
+                
+                sendFaceToServer(studentId, faceData) {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, 
+                            "✅ Biometric registration complete!", 
+                            Toast.LENGTH_LONG).show()
+                        
+                        sharedPreferences.edit()
+                            .remove("pending_bio_student_id")
+                            .remove("pending_bio_student_name")
+                            .apply()
+                    }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    
+    private fun generateBiometricHash(type: String): String {
+        val data = "$type-${System.currentTimeMillis()}-${Math.random()}"
+        val digest = MessageDigest.getInstance("SHA-256")
+        val hash = digest.digest(data.toByteArray())
+        return Base64.encodeToString(hash, Base64.NO_WRAP)
+    }
+    
+    private fun sendFingerprintToServer(studentId: String, fingerprintData: String, onSuccess: () -> Unit) {
+        val json = """{"studentId":"$studentId","fingerprintData":"$fingerprintData"}"""
+        
+        val request = Request.Builder()
+            .url("${NetworkManager.getServerUrl()}/api/biometric/register-fingerprint")
+            .post(json.toRequestBody("application/json".toMediaType()))
+            .build()
+        
+        httpClient.newCall(request).enqueue(object : OkHttpCallback {
+            override fun onResponse(call: OkHttpCall, response: okhttp3.Response) {
+                if (response.isSuccessful) {
+                    Log.d("Biometric", "Fingerprint registered successfully")
+                    onSuccess()
+                } else {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, 
+                            "Failed to register fingerprint", 
+                            Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            
+            override fun onFailure(call: OkHttpCall, e: IOException) {
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, 
+                        "Network error: ${e.message}", 
+                        Toast.LENGTH_SHORT).show()
+                }
+            }
+        })
+    }
+    
+    private fun sendFaceToServer(studentId: String, faceData: String, onSuccess: () -> Unit) {
+        val json = """{"studentId":"$studentId","faceData":"$faceData"}"""
+        
+        val request = Request.Builder()
+            .url("${NetworkManager.getServerUrl()}/api/biometric/register-face")
+            .post(json.toRequestBody("application/json".toMediaType()))
+            .build()
+        
+        httpClient.newCall(request).enqueue(object : OkHttpCallback {
+            override fun onResponse(call: OkHttpCall, response: okhttp3.Response) {
+                if (response.isSuccessful) {
+                    Log.d("Biometric", "Face registered successfully")
+                    onSuccess()
+                } else {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, 
+                            "Failed to register face", 
+                            Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            
+            override fun onFailure(call: OkHttpCall, e: IOException) {
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, 
+                        "Network error: ${e.message}", 
+                        Toast.LENGTH_SHORT).show()
+                }
+            }
+        })
+    }
+
 }

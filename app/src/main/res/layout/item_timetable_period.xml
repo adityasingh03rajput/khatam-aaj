@@ -3,16 +3,15 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="8dp"
-    android:background="?android:attr/selectableItemBackground">
+    android:background="#2D2D2D">
 
-    <!-- Period Info Column -->
+    <!-- Fixed Period Info Column -->
     <LinearLayout
-        android:layout_width="100dp"
-        android:layout_height="wrap_content"
+        android:layout_width="110dp"
+        android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
-        android:background="@drawable/border_gray"
+        android:background="#1E1E1E"
         android:padding="8dp">
 
         <TextView
@@ -21,7 +20,8 @@
             android:layout_height="wrap_content"
             android:text="Period 1"
             android:textStyle="bold"
-            android:textSize="12sp"
+            android:textSize="13sp"
+            android:textColor="#5D9CEC"
             android:gravity="center" />
 
         <TextView
@@ -29,9 +29,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="08:00"
-            android:textSize="11sp"
-            android:layout_marginTop="4dp"
-            android:background="?android:attr/selectableItemBackground"
+            android:textSize="12sp"
+            android:textColor="#E0E0E0"
+            android:layout_marginTop="8dp"
             android:padding="4dp" />
 
         <TextView
@@ -39,341 +39,356 @@
             android:layout_height="wrap_content"
             android:text="to"
             android:textSize="10sp"
-            android:layout_marginTop="2dp" />
+            android:textColor="#A0A0A0"
+            android:layout_marginTop="4dp" />
 
         <TextView
             android:id="@+id/endTimeText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="09:00"
-            android:textSize="11sp"
-            android:layout_marginTop="2dp"
-            android:background="?android:attr/selectableItemBackground"
+            android:textSize="12sp"
+            android:textColor="#E0E0E0"
+            android:layout_marginTop="4dp"
             android:padding="4dp" />
 
         <ImageButton
             android:id="@+id/deletePeriodButton"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginTop="8dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_delete"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="12dp"
+            android:background="@android:drawable/ic_menu_delete"
+            android:backgroundTint="#ff6b6b"
             android:contentDescription="Delete Period"
+            android:padding="8dp"
             android:scaleType="fitCenter" />
 
     </LinearLayout>
 
     <!-- Scrollable Days Container -->
     <HorizontalScrollView
+        android:id="@+id/daysScrollView"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:scrollbars="horizontal">
+        android:scrollbars="none">
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
-            <!-- Monday Column -->
-            <LinearLayout
-                android:layout_width="120dp"
+        <!-- Monday Column -->
+        <LinearLayout
+            android:layout_width="140dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:background="#1E1E1E"
+            android:layout_margin="1dp"
+            android:padding="8dp">
+
+            <EditText
+                android:id="@+id/mondaySubject"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/border_gray"
-                android:padding="4dp">
+                android:hint="Subject"
+                android:textSize="13sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Monday"
-                    android:textStyle="bold"
-                    android:textSize="10sp"
-                    android:gravity="center"
-                    android:background="@color/header_background"
-                    android:padding="2dp" />
-
-                <EditText
-                    android:id="@+id/mondaySubject"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Subject"
-                    android:textSize="10sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
-
-                <EditText
-                    android:id="@+id/mondayRoom"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Room"
-                    android:textSize="9sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
-
-                <EditText
-                    android:id="@+id/mondayTeacher"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Teacher"
-                    android:textSize="9sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
-
-            </LinearLayout>
-
-            <!-- Tuesday Column -->
-            <LinearLayout
-                android:layout_width="120dp"
+            <EditText
+                android:id="@+id/mondayRoom"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/border_gray"
-                android:padding="4dp">
+                android:hint="Room"
+                android:textSize="11sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:layout_marginTop="4dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Tuesday"
-                    android:textStyle="bold"
-                    android:textSize="10sp"
-                    android:gravity="center"
-                    android:background="@color/header_background"
-                    android:padding="2dp" />
-
-                <EditText
-                    android:id="@+id/tuesdaySubject"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Subject"
-                    android:textSize="10sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
-
-                <EditText
-                    android:id="@+id/tuesdayRoom"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Room"
-                    android:textSize="9sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
-
-                <EditText
-                    android:id="@+id/tuesdayTeacher"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Teacher"
-                    android:textSize="9sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
-
-            </LinearLayout>
-
-            <!-- Wednesday Column -->
-            <LinearLayout
-                android:layout_width="120dp"
+            <EditText
+                android:id="@+id/mondayTeacher"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/border_gray"
-                android:padding="4dp">
+                android:hint="Teacher"
+                android:textSize="11sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:layout_marginTop="4dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Wednesday"
-                    android:textStyle="bold"
-                    android:textSize="10sp"
-                    android:gravity="center"
-                    android:background="@color/header_background"
-                    android:padding="2dp" />
+        </LinearLayout>
 
-                <EditText
-                    android:id="@+id/wednesdaySubject"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Subject"
-                    android:textSize="10sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
+        <!-- Tuesday Column -->
+        <LinearLayout
+            android:layout_width="140dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:background="#1E1E1E"
+            android:layout_margin="1dp"
+            android:padding="8dp">
 
-                <EditText
-                    android:id="@+id/wednesdayRoom"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Room"
-                    android:textSize="9sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
-
-                <EditText
-                    android:id="@+id/wednesdayTeacher"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Teacher"
-                    android:textSize="9sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
-
-            </LinearLayout>
-
-            <!-- Thursday Column -->
-            <LinearLayout
-                android:layout_width="120dp"
+            <EditText
+                android:id="@+id/tuesdaySubject"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/border_gray"
-                android:padding="4dp">
+                android:hint="Subject"
+                android:textSize="13sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Thursday"
-                    android:textStyle="bold"
-                    android:textSize="10sp"
-                    android:gravity="center"
-                    android:background="@color/header_background"
-                    android:padding="2dp" />
-
-                <EditText
-                    android:id="@+id/thursdaySubject"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Subject"
-                    android:textSize="10sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
-
-                <EditText
-                    android:id="@+id/thursdayRoom"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Room"
-                    android:textSize="9sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
-
-                <EditText
-                    android:id="@+id/thursdayTeacher"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Teacher"
-                    android:textSize="9sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
-
-            </LinearLayout>
-
-            <!-- Friday Column -->
-            <LinearLayout
-                android:layout_width="120dp"
+            <EditText
+                android:id="@+id/tuesdayRoom"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/border_gray"
-                android:padding="4dp">
+                android:hint="Room"
+                android:textSize="11sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:layout_marginTop="4dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Friday"
-                    android:textStyle="bold"
-                    android:textSize="10sp"
-                    android:gravity="center"
-                    android:background="@color/header_background"
-                    android:padding="2dp" />
-
-                <EditText
-                    android:id="@+id/fridaySubject"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Subject"
-                    android:textSize="10sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
-
-                <EditText
-                    android:id="@+id/fridayRoom"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Room"
-                    android:textSize="9sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
-
-                <EditText
-                    android:id="@+id/fridayTeacher"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Teacher"
-                    android:textSize="9sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
-
-            </LinearLayout>
-
-            <!-- Saturday Column -->
-            <LinearLayout
-                android:layout_width="120dp"
+            <EditText
+                android:id="@+id/tuesdayTeacher"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/border_gray"
-                android:padding="4dp">
+                android:hint="Teacher"
+                android:textSize="11sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:layout_marginTop="4dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Saturday"
-                    android:textStyle="bold"
-                    android:textSize="10sp"
-                    android:gravity="center"
-                    android:background="@color/header_background"
-                    android:padding="2dp" />
+        </LinearLayout>
 
-                <EditText
-                    android:id="@+id/saturdaySubject"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Subject"
-                    android:textSize="10sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
+        <!-- Wednesday Column -->
+        <LinearLayout
+            android:layout_width="140dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:background="#1E1E1E"
+            android:layout_margin="1dp"
+            android:padding="8dp">
 
-                <EditText
-                    android:id="@+id/saturdayRoom"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Room"
-                    android:textSize="9sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
+            <EditText
+                android:id="@+id/wednesdaySubject"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Subject"
+                android:textSize="13sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
 
-                <EditText
-                    android:id="@+id/saturdayTeacher"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Teacher"
-                    android:textSize="9sp"
-                    android:padding="2dp"
-                    android:background="@android:color/transparent"
-                    android:maxLines="1" />
+            <EditText
+                android:id="@+id/wednesdayRoom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Room"
+                android:textSize="11sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:layout_marginTop="4dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
 
-            </LinearLayout>
+            <EditText
+                android:id="@+id/wednesdayTeacher"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Teacher"
+                android:textSize="11sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:layout_marginTop="4dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
+
+        </LinearLayout>
+
+        <!-- Thursday Column -->
+        <LinearLayout
+            android:layout_width="140dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:background="#1E1E1E"
+            android:layout_margin="1dp"
+            android:padding="8dp">
+
+            <EditText
+                android:id="@+id/thursdaySubject"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Subject"
+                android:textSize="13sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
+
+            <EditText
+                android:id="@+id/thursdayRoom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Room"
+                android:textSize="11sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:layout_marginTop="4dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
+
+            <EditText
+                android:id="@+id/thursdayTeacher"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Teacher"
+                android:textSize="11sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:layout_marginTop="4dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
+
+        </LinearLayout>
+
+        <!-- Friday Column -->
+        <LinearLayout
+            android:layout_width="140dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:background="#1E1E1E"
+            android:layout_margin="1dp"
+            android:padding="8dp">
+
+            <EditText
+                android:id="@+id/fridaySubject"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Subject"
+                android:textSize="13sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
+
+            <EditText
+                android:id="@+id/fridayRoom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Room"
+                android:textSize="11sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:layout_marginTop="4dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
+
+            <EditText
+                android:id="@+id/fridayTeacher"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Teacher"
+                android:textSize="11sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:layout_marginTop="4dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
+
+        </LinearLayout>
+
+        <!-- Saturday Column -->
+        <LinearLayout
+            android:layout_width="140dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:background="#1E1E1E"
+            android:layout_margin="1dp"
+            android:padding="8dp">
+
+            <EditText
+                android:id="@+id/saturdaySubject"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Subject"
+                android:textSize="13sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
+
+            <EditText
+                android:id="@+id/saturdayRoom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Room"
+                android:textSize="11sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:layout_marginTop="4dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
+
+            <EditText
+                android:id="@+id/saturdayTeacher"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Teacher"
+                android:textSize="11sp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#A0A0A0"
+                android:padding="6dp"
+                android:layout_marginTop="4dp"
+                android:background="#2D2D2D"
+                android:maxLines="1"
+                android:inputType="text" />
+
+        </LinearLayout>
 
         </LinearLayout>
 

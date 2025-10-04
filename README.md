@@ -1,4 +1,4 @@
-# 📚 Let's Bunk - Smart Attendance & Timetable Management System
+# 📚 Let's Bunk - Smart Attendance Management System
 
 <div align="center">
 

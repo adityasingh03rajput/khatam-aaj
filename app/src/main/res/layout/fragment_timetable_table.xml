@@ -1,130 +1,164 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:background="@color/background_light">
+    android:background="?android:attr/colorBackground"
+    android:fillViewport="true"
+    android:scrollbars="vertical">
 
-    <!-- Header Section -->
-    <LinearLayout
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!-- Header Card -->
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="16dp"
-        android:gravity="center_vertical">
+        android:layout_margin="16dp"
+        app:cardElevation="4dp"
+        app:cardCornerRadius="12dp"
+        app:cardBackgroundColor="@color/card">
 
-        <!-- Branch Spinner -->
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:orientation="vertical"
-            android:layout_marginEnd="8dp">
+            android:padding="16dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Branch"
+                android:text="📅 Timetable Configuration"
+                android:textSize="18sp"
                 android:textStyle="bold"
-                android:textSize="12sp"
-                android:layout_marginBottom="4dp" />
+                android:textColor="@color/primary"
+                android:layout_marginBottom="16dp" />
 
-            <Spinner
-                android:id="@+id/tableBranchSpinner"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:background="@drawable/spinner_background"
-                android:padding="8dp" />
-
-        </LinearLayout>
-
-        <!-- Semester Spinner -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="8dp">
-
-            <TextView
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Semester"
-                android:textStyle="bold"
-                android:textSize="12sp"
-                android:layout_marginBottom="4dp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-            <Spinner
-                android:id="@+id/tableSemesterSpinner"
-                android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:background="@drawable/spinner_background"
-                android:padding="8dp" />
+                <!-- Branch Spinner -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginEnd="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Branch"
+                        android:textStyle="bold"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary"
+                        android:layout_marginBottom="4dp" />
+
+                    <Spinner
+                        android:id="@+id/tableBranchSpinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@color/surface"
+                        android:padding="12dp"
+                        android:popupBackground="@color/surface" />
+
+                </LinearLayout>
+
+                <!-- Semester Spinner -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Semester"
+                        android:textStyle="bold"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary"
+                        android:layout_marginBottom="4dp" />
+
+                    <Spinner
+                        android:id="@+id/tableSemesterSpinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@color/surface"
+                        android:padding="12dp"
+                        android:popupBackground="@color/surface" />
+
+                </LinearLayout>
+
+            </LinearLayout>
 
         </LinearLayout>
 
-    </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
     <!-- Action Buttons -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         android:gravity="center">
 
         <Button
             android:id="@+id/addPeriodButton"
+            style="@style/Button.LetsBunk"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="48dp"
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
-            android:text="Add Period"
-            android:textSize="12sp"
-            android:background="@drawable/button_primary"
-            android:textColor="@android:color/white"
-            android:drawableStart="@android:drawable/ic_input_add"
-            android:drawablePadding="8dp"
-            android:gravity="center" />
+            android:text="➕ Add Period"
+            android:textSize="14sp" />
 
         <Button
             android:id="@+id/saveTimetableButton"
+            style="@style/Button.LetsBunk.Success"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="48dp"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
-            android:text="Save Timetable"
-            android:textSize="12sp"
-            android:background="@drawable/button_success"
-            android:textColor="@android:color/white"
-            android:drawableStart="@android:drawable/ic_menu_save"
-            android:drawablePadding="8dp"
-            android:gravity="center" />
+            android:text="💾 Save"
+            android:textSize="14sp" />
 
     </LinearLayout>
 
-    <!-- Timetable Header -->
+    <!-- Timetable Header (Fixed) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="@color/header_background"
-        android:padding="8dp"
-        android:layout_marginBottom="8dp">
+        android:background="@color/surface"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="8dp"
+        android:elevation="2dp">
 
-        <!-- Period Info Header -->
+        <!-- Fixed Period Column Header -->
         <TextView
-            android:layout_width="100dp"
+            android:layout_width="110dp"
             android:layout_height="wrap_content"
             android:text="Period\nTime"
             android:textStyle="bold"
             android:textSize="12sp"
             android:gravity="center"
-            android:textColor="@android:color/white" />
+            android:textColor="@color/primary"
+            android:padding="12dp" />
 
-        <!-- Days Header -->
+        <!-- Scrollable Days Header -->
         <HorizontalScrollView
+            android:id="@+id/headerScrollView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -136,70 +170,64 @@
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="120dp"
+                    android:layout_width="140dp"
                     android:layout_height="wrap_content"
                     android:text="Monday"
                     android:textStyle="bold"
                     android:textSize="12sp"
                     android:gravity="center"
-                    android:textColor="@android:color/white"
-                    android:background="@drawable/border_white"
-                    android:padding="8dp" />
+                    android:textColor="#5D9CEC"
+                    android:padding="12dp" />
 
                 <TextView
-                    android:layout_width="120dp"
+                    android:layout_width="140dp"
                     android:layout_height="wrap_content"
                     android:text="Tuesday"
                     android:textStyle="bold"
                     android:textSize="12sp"
                     android:gravity="center"
-                    android:textColor="@android:color/white"
-                    android:background="@drawable/border_white"
-                    android:padding="8dp" />
+                    android:textColor="#5D9CEC"
+                    android:padding="12dp" />
 
                 <TextView
-                    android:layout_width="120dp"
+                    android:layout_width="140dp"
                     android:layout_height="wrap_content"
                     android:text="Wednesday"
                     android:textStyle="bold"
                     android:textSize="12sp"
                     android:gravity="center"
-                    android:textColor="@android:color/white"
-                    android:background="@drawable/border_white"
-                    android:padding="8dp" />
+                    android:textColor="#5D9CEC"
+                    android:padding="12dp" />
 
                 <TextView
-                    android:layout_width="120dp"
+                    android:layout_width="140dp"
                     android:layout_height="wrap_content"
                     android:text="Thursday"
                     android:textStyle="bold"
                     android:textSize="12sp"
                     android:gravity="center"
-                    android:textColor="@android:color/white"
-                    android:background="@drawable/border_white"
-                    android:padding="8dp" />
+                    android:textColor="#5D9CEC"
+                    android:padding="12dp" />
 
                 <TextView
-                    android:layout_width="120dp"
+                    android:layout_width="140dp"
                     android:layout_height="wrap_content"
                     android:text="Friday"
                     android:textStyle="bold"
                     android:textSize="12sp"
                     android:gravity="center"
-                    android:textColor="@android:color/white"
-                    android:background="@drawable/border_white"
-                    android:padding="8dp" />
+                    android:textColor="#5D9CEC"
+                    android:padding="12dp" />
 
                 <TextView
-                    android:layout_width="120dp"
+                    android:layout_width="140dp"
                     android:layout_height="wrap_content"
                     android:text="Saturday"
                     android:textStyle="bold"
                     android:textSize="12sp"
                     android:gravity="center"
-                    android:textColor="@android:color/white"
-                    android:background="@drawable/border_white"
-                    android:padding="8dp" />
+                    android:textColor="#5D9CEC"
+                    android:padding="12dp" />
 
             </LinearLayout>
 
@@ -211,45 +239,60 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/timetableRowsRecyclerView"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:scrollbars="vertical"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:scrollbars="none"
         android:clipToPadding="false"
-        android:paddingBottom="16dp" />
+        android:paddingBottom="16dp"
+        android:nestedScrollingEnabled="false" />
 
-    <!-- Empty State -->
-    <LinearLayout
+    <!-- Empty State Card -->
+    <androidx.cardview.widget.CardView
         android:id="@+id/emptyStateLayout"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:visibility="gone">
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:visibility="gone"
+        app:cardElevation="8dp"
+        app:cardCornerRadius="12dp"
+        app:cardBackgroundColor="#1E1E1E">
 
-        <ImageView
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:src="@android:drawable/ic_menu_agenda"
-            android:alpha="0.3"
-            android:layout_marginBottom="16dp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="No timetable available"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:alpha="0.6"
-            android:layout_marginBottom="8dp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📅"
+                android:textSize="64sp"
+                android:layout_marginBottom="16dp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Add periods to create a timetable"
-            android:textSize="14sp"
-            android:alpha="0.5" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No timetable available"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#E0E0E0"
+                android:layout_marginBottom="8dp" />
 
-    </LinearLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Add periods to create a timetable"
+                android:textSize="14sp"
+                android:textColor="#A0A0A0"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
 
 </LinearLayout>
+
+</ScrollView>

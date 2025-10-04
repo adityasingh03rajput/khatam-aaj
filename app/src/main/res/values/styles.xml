@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Enhanced Typography System -->
+    <style name="TextAppearance.Display.Large" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">32sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:lineSpacingExtra">8sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    
+    <style name="TextAppearance.Display.Medium" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">28sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:lineSpacingExtra">8sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    
+    <style name="TextAppearance.Headline.Large" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:lineSpacingExtra">8sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    
+    <style name="TextAppearance.Title.Large" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:lineSpacingExtra">4sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    
+    <style name="TextAppearance.Title.Medium" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:lineSpacingExtra">4sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    
+    <style name="TextAppearance.Body.Large" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:lineSpacingExtra">4sp</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+    
+    <style name="TextAppearance.Body.Medium" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:lineSpacingExtra">2sp</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+    
+    <style name="TextAppearance.Label.Large" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    
+    <style name="TextAppearance.Label.Medium" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    
+    <style name="TextAppearance.Label.Small" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">11sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <!-- Enhanced Button Styles -->
+    <style name="Button.Primary" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/button_primary_enhanced</item>
+        <item name="android:textColor">@color/text_white</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:paddingTop">@dimen/space_4</item>
+        <item name="android:paddingBottom">@dimen/space_4</item>
+        <item name="android:paddingStart">@dimen/space_6</item>
+        <item name="android:paddingEnd">@dimen/space_6</item>
+        <item name="android:minHeight">56dp</item>
+        <item name="android:elevation">@dimen/elevation_2</item>
+        <item name="android:stateListAnimator">@animator/button_elevation</item>
+    </style>
+    
+    <style name="Button.Secondary" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/button_secondary_enhanced</item>
+        <item name="android:textColor">@color/primary_main</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:paddingTop">@dimen/space_4</item>
+        <item name="android:paddingBottom">@dimen/space_4</item>
+        <item name="android:paddingStart">@dimen/space_6</item>
+        <item name="android:paddingEnd">@dimen/space_6</item>
+        <item name="android:minHeight">56dp</item>
+        <item name="android:elevation">@dimen/elevation_1</item>
+    </style>
+    
+    <style name="Button.Floating" parent="Widget.Design.FloatingActionButton">
+        <item name="android:layout_width">56dp</item>
+        <item name="android:layout_height">56dp</item>
+        <item name="backgroundTint">@color/accent_main</item>
+        <item name="tint">@color/text_white</item>
+        <item name="elevation">@dimen/elevation_3</item>
+        <item name="pressedTranslationZ">@dimen/elevation_4</item>
+    </style>
+
+    <!-- Enhanced Card Styles -->
+    <style name="Card.Premium" parent="CardView">
+        <item name="cardCornerRadius">@dimen/card_radius</item>
+        <item name="cardElevation">@dimen/elevation_2</item>
+        <item name="cardBackgroundColor">@color/card_background</item>
+        <item name="android:layout_margin">@dimen/space_2</item>
+        <item name="contentPadding">@dimen/space_4</item>
+        <item name="cardUseCompatPadding">true</item>
+        <item name="cardPreventCornerOverlap">true</item>
+    </style>
+    
+    <style name="Card.Elevated" parent="Card.Premium">
+        <item name="cardElevation">@dimen/elevation_4</item>
+    </style>
+    
+    <style name="Card.Status" parent="Card.Premium">
+        <item name="cardElevation">@dimen/elevation_1</item>
+        <item name="android:layout_margin">@dimen/space_1</item>
+        <item name="contentPadding">@dimen/space_3</item>
+    </style>
+
+    <!-- Enhanced App Bar Styles -->
+    <style name="AppBar.Premium" parent="Widget.Design.AppBarLayout">
+        <item name="android:background">@drawable/app_bar_gradient</item>
+        <item name="android:elevation">@dimen/elevation_3</item>
+        <item name="android:theme">@style/ThemeOverlay.AppCompat.Dark.ActionBar</item>
+    </style>
+    
+    <style name="Toolbar.Premium" parent="Widget.AppCompat.Toolbar">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:minHeight">@dimen/app_bar_height</item>
+        <item name="titleTextAppearance">@style/TextAppearance.Title.Large</item>
+        <item name="titleTextColor">@color/text_white</item>
+        <item name="subtitleTextAppearance">@style/TextAppearance.Body.Medium</item>
+        <item name="subtitleTextColor">@color/text_white</item>
+    </style>
+
+    <!-- Base Badge Style -->
+    <style name="Badge" />
+    
+    <!-- Random Ring Badge Style -->
+    <style name="Badge.RandomRing" parent="Badge">
+        <item name="android:layout_width">24dp</item>
+        <item name="android:layout_height">24dp</item>
+        <item name="android:background">@drawable/badge_random_ring</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/text_white</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:elevation">@dimen/elevation_2</item>
+    </style>
+
+    <!-- Base Status Indicator Style -->
+    <style name="StatusIndicator" />
+    
+    <!-- Status Indicator Styles -->
+    <style name="StatusIndicator.Attending" parent="StatusIndicator">
+        <item name="android:background">@drawable/status_attending</item>
+        <item name="android:textColor">@color/success_main</item>
+        <item name="android:padding">@dimen/space_2</item>
+    </style>
+    
+    <style name="StatusIndicator.Absent" parent="StatusIndicator">
+        <item name="android:background">@drawable/status_absent</item>
+        <item name="android:textColor">@color/warning_main</item>
+        <item name="android:padding">@dimen/space_2</item>
+    </style>
+    
+    <style name="StatusIndicator.Attended" parent="StatusIndicator">
+        <item name="android:background">@drawable/status_attended</item>
+        <item name="android:textColor">@color/info_main</item>
+        <item name="android:padding">@dimen/space_2</item>
+    </style>
+
+    <!-- Enhanced Input Styles -->
+    <style name="EditText.Premium" parent="Widget.AppCompat.EditText">
+        <item name="android:background">@drawable/edittext_background</item>
+        <item name="android:padding">@dimen/space_4</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColorHint">@color/text_disabled</item>
+        <item name="android:minHeight">56dp</item>
+    </style>
+
+    <!-- Base Animation Style -->
+    <style name="Animation" />
+    
+    <!-- Animation Styles -->
+    <style name="Animation.SlideUp" parent="Animation">
+        <item name="android:windowEnterAnimation">@anim/slide_up_enter</item>
+        <item name="android:windowExitAnimation">@anim/slide_down_exit</item>
+    </style>
+    
+    <style name="Animation.FadeScale" parent="Animation">
+        <item name="android:windowEnterAnimation">@anim/fade_scale_enter</item>
+        <item name="android:windowExitAnimation">@anim/fade_scale_exit</item>
+    </style>
+</resources>

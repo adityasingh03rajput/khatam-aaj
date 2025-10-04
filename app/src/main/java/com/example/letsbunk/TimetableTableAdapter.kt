@@ -12,8 +12,8 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 /**
- * Adapter for Tabular Timetable View
- * Displays periods in rows with days as columns
+ * Enhanced Adapter for Tabular Timetable View
+ * Optimized for performance with proper ViewHolder pattern
  */
 class TimetableTableAdapter(
     private val periods: MutableList<Period>,
@@ -21,6 +21,10 @@ class TimetableTableAdapter(
     private val onPeriodChanged: (Int, Period) -> Unit = { _, _ -> },
     private val onDeletePeriod: (Int) -> Unit = {}
 ) : RecyclerView.Adapter<TimetableTableAdapter.PeriodRowViewHolder>() {
+
+    companion object {
+        private const val TAG = "TimetableAdapter"
+    }
 
     class PeriodRowViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val periodNumberText: TextView = view.findViewById(R.id.periodNumberText)
@@ -61,6 +65,10 @@ class TimetableTableAdapter(
     }
 
     override fun onBindViewHolder(holder: PeriodRowViewHolder, position: Int) {
+        if (position >= periods.size) {
+            Log.w(TAG, "Invalid position: $position, periods size: ${periods.size}")
+            return
+        }
         val period = periods[position]
         
         // Set period info
@@ -129,6 +137,17 @@ class TimetableTableAdapter(
         readOnly: Boolean,
         onChange: (String, String, String) -> Unit
     ) {
+        // Remove any existing text watchers to prevent duplicates
+        subjectEdit.tag?.let { 
+            if (it is TextWatcher) subjectEdit.removeTextChangedListener(it)
+        }
+        roomEdit.tag?.let { 
+            if (it is TextWatcher) roomEdit.removeTextChangedListener(it)
+        }
+        teacherEdit.tag?.let { 
+            if (it is TextWatcher) teacherEdit.removeTextChangedListener(it)
+        }
+        
         // Set values
         subjectEdit.setText(entry?.subject ?: "")
         roomEdit.setText(entry?.room ?: "")
@@ -141,51 +160,70 @@ class TimetableTableAdapter(
         
         if (!readOnly) {
             // Add text watchers for live updates
-            subjectEdit.addTextChangedListener(object : TextWatcher {
+            val subjectWatcher = object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
                 override fun afterTextChanged(s: Editable?) {
                     onChange(s.toString(), roomEdit.text.toString(), teacherEdit.text.toString())
                 }
-            })
+            }
+            subjectEdit.addTextChangedListener(subjectWatcher)
+            subjectEdit.tag = subjectWatcher
             
-            roomEdit.addTextChangedListener(object : TextWatcher {
+            val roomWatcher = object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
                 override fun afterTextChanged(s: Editable?) {
                     onChange(subjectEdit.text.toString(), s.toString(), teacherEdit.text.toString())
                 }
-            })
+            }
+            roomEdit.addTextChangedListener(roomWatcher)
+            roomEdit.tag = roomWatcher
             
-            teacherEdit.addTextChangedListener(object : TextWatcher {
+            val teacherWatcher = object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
                 override fun afterTextChanged(s: Editable?) {
                     onChange(subjectEdit.text.toString(), roomEdit.text.toString(), s.toString())
                 }
-            })
+            }
+            teacherEdit.addTextChangedListener(teacherWatcher)
+            teacherEdit.tag = teacherWatcher
         }
     }
 
     override fun getItemCount() = periods.size
 
     fun updatePeriods(newPeriods: List<Period>) {
+        val oldSize = periods.size
         periods.clear()
         periods.addAll(newPeriods)
-        notifyDataSetChanged()
-        Log.d("TimetableTableAdapter", "Updated ${periods.size} periods")
+        
+        // Use more efficient notifications
+        if (oldSize == newPeriods.size) {
+            notifyItemRangeChanged(0, newPeriods.size)
+        } else {
+            notifyDataSetChanged()
+        }
+        
+        Log.d(TAG, "Updated ${periods.size} periods (was $oldSize)")
     }
 
     fun addPeriod(period: Period) {
+        val position = periods.size
         periods.add(period)
-        notifyItemInserted(periods.size - 1)
+        notifyItemInserted(position)
+        Log.d(TAG, "Added period ${period.periodNumber} at position $position")
     }
 
     fun removePeriod(position: Int) {
         if (position in periods.indices) {
-            periods.removeAt(position)
+            val removedPeriod = periods.removeAt(position)
             notifyItemRemoved(position)
             notifyItemRangeChanged(position, periods.size)
+            Log.d(TAG, "Removed period ${removedPeriod.periodNumber} from position $position")
+        } else {
+            Log.w(TAG, "Invalid remove position: $position")
         }
     }
 }

@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="@dimen/card_radius"
+    app:cardElevation="@dimen/elevation_2"
+    android:layout_margin="@dimen/space_2"
+    android:animateLayoutChanges="true"
+    android:foreground="?android:attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
+    android:id="@+id/cardView">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/space_4">
+
+        <!-- Header Row with Student Info and Status -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/space_3">
+
+            <!-- Student Info -->
+            <LinearLayout
+                android:id="@+id/studentInfoLayout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true">
+
+                <TextView
+                    android:id="@+id/studentNameTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Student Name"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:fontFamily="sans-serif-medium" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="@dimen/space_1">
+
+                    <TextView
+                        android:id="@+id/departmentTextView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Computer Science"
+                        android:textAppearance="@style/TextAppearance.Body.Medium"
+                        android:textColor="@color/text_secondary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=" • "
+                        android:textColor="@color/text_disabled" />
+
+                    <TextView
+                        android:id="@+id/roomTextView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Room 101"
+                        android:textAppearance="@style/TextAppearance.Body.Medium"
+                        android:textColor="@color/text_secondary" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Random Ring Badge -->
+            <TextView
+                android:id="@+id/randomRingBadge"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentTop="true"
+                style="@style/Badge.RandomRing"
+                android:text="🔔"
+                android:visibility="gone" />
+
+            <!-- Timer Display -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="@dimen/space_8">
+
+                <TextView
+                    android:id="@+id/timeRemainingTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="10:00"
+                    android:textAppearance="@style/TextAppearance.Headline.Large"
+                    android:textColor="@color/primary_main"
+                    android:fontFamily="monospace" />
+
+                <TextView
+                    android:id="@+id/statusTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Attending"
+                    android:textAppearance="@style/TextAppearance.Label.Medium"
+                    android:textColor="@color/success_main"
+                    android:background="@drawable/status_attending"
+                    android:paddingHorizontal="@dimen/space_2"
+                    android:paddingVertical="@dimen/space_1" />
+            </LinearLayout>
+        </RelativeLayout>
+
+        <!-- Status Message (for Random Ring) -->
+        <TextView
+            android:id="@+id/statusMessageTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="✓ Accepted by Teacher"
+            android:textAppearance="@style/TextAppearance.Body.Medium"
+            android:textColor="@color/success_main"
+            android:background="@color/success_light"
+            android:padding="@dimen/space_3"
+            android:layout_marginBottom="@dimen/space_3"
+            android:drawableStart="@android:drawable/ic_dialog_info"
+            android:drawablePadding="@dimen/space_2"
+            android:gravity="center_vertical"
+            android:visibility="gone" />
+
+        <!-- Action Buttons Row -->
+        <LinearLayout
+            android:id="@+id/actionButtonsLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:visibility="gone">
+
+            <Button
+                android:id="@+id/acceptButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Accept"
+                style="@style/Button.Primary"
+                android:backgroundTint="@color/success_main"
+                android:layout_marginEnd="@dimen/space_2"
+                android:drawableStart="@android:drawable/ic_menu_add"
+                android:drawablePadding="@dimen/space_1" />
+
+            <Button
+                android:id="@+id/rejectButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Reject"
+                style="@style/Button.Secondary"
+                android:textColor="@color/error_main"
+                android:layout_marginStart="@dimen/space_2"
+                android:drawableStart="@android:drawable/ic_menu_close_clear_cancel"
+                android:drawablePadding="@dimen/space_1" />
+        </LinearLayout>
+
+        <!-- Resume Button (for rejected students) -->
+        <Button
+            android:id="@+id/resumeButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Resume Attendance"
+            style="@style/Button.Primary"
+            android:backgroundTint="@color/info_main"
+            android:layout_marginTop="@dimen/space_2"
+            android:drawableStart="@android:drawable/ic_media_play"
+            android:drawablePadding="@dimen/space_2"
+            android:visibility="gone" />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

@@ -3,18 +3,21 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="@dimen/card_margin"
-    app:cardElevation="@dimen/card_elevation"
+    android:layout_margin="@dimen/space_2"
+    app:cardElevation="@dimen/elevation_2"
     app:cardCornerRadius="@dimen/card_radius"
     android:id="@+id/cardView"
-    android:background="@drawable/soft_card"
-    android:animateLayoutChanges="true">
+    style="@style/Card.Premium"
+    android:animateLayoutChanges="true"
+    android:foreground="?android:attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="@dimen/space_4">
 
         <!-- Student Info Row -->
         <LinearLayout
@@ -72,10 +75,18 @@
 
             <!-- Timer Display -->
             <LinearLayout
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:gravity="center">
+
+                <TextView
+                    android:id="@+id/studentNameTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Student Name"
+                    android:textAppearance="@style/TextAppearance.Title.Medium"
+                    android:textColor="@color/text_primary"
+                    android:fontFamily="sans-serif-medium" />
 
                 <TextView
                     android:id="@+id/timeRemainingTextView"
@@ -85,7 +96,7 @@
                     android:textSize="24sp"
                     android:textStyle="bold"
                     android:textColor="@android:color/holo_blue_dark"
-                    android:fontFamily="monospace"/>
+                    android:fontFamily="monospace" />
 
                 <TextView
                     android:id="@+id/statusTextView"

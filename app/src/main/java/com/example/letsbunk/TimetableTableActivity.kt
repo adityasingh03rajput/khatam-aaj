@@ -33,8 +33,11 @@ class TimetableTableActivity : AppCompatActivity() {
     private var currentBranch = "Computer Science"
     private var currentSemester = "1st Semester"
     private val gson = Gson()
+    private lateinit var sharedPreferences: android.content.SharedPreferences
     
     private var isTeacher = true // Set based on user role
+    private var isSaving = false // Flag to prevent reload during save
+    private var isLoading = false // Flag to prevent multiple simultaneous loads
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,8 +46,10 @@ class TimetableTableActivity : AppCompatActivity() {
         supportActionBar?.title = "Timetable Management"
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         
+        // Initialize SharedPreferences
+        sharedPreferences = getSharedPreferences("LetsBunkPrefs", Context.MODE_PRIVATE)
+        
         // Get user role from SharedPreferences
-        val sharedPreferences = getSharedPreferences("LetsBunkPrefs", Context.MODE_PRIVATE)
         isTeacher = !sharedPreferences.getBoolean("isStudent", false)
         
         initializeViews()
@@ -52,6 +57,8 @@ class TimetableTableActivity : AppCompatActivity() {
         setupRecyclerView()
         setupButtons()
         setupWebSocketListeners()
+        
+        // Load saved timetable for current branch/semester
         loadTimetableFromServer()
     }
 
@@ -72,8 +79,13 @@ class TimetableTableActivity : AppCompatActivity() {
         
         branchSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                currentBranch = branches[position]
-                loadTimetableFromServer()
+                val newBranch = branches[position]
+                if (newBranch != currentBranch) {
+                    currentBranch = newBranch
+                    if (!isSaving) {
+                        loadTimetableFromServer()
+                    }
+                }
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
@@ -87,14 +99,28 @@ class TimetableTableActivity : AppCompatActivity() {
         
         semesterSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                currentSemester = semesters[position]
-                loadTimetableFromServer()
+                val newSemester = semesters[position]
+                if (newSemester != currentSemester) {
+                    currentSemester = newSemester
+                    if (!isSaving) {
+                        loadTimetableFromServer()
+                    }
+                }
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
 
     private fun setupRecyclerView() {
+        // Initialize with at least one empty period to show the grid structure
+        if (periods.isEmpty()) {
+            periods.add(Period(
+                periodNumber = 1,
+                startTime = "08:00",
+                endTime = "09:00"
+            ))
+        }
+        
         adapter = TimetableTableAdapter(
             periods = periods,
             isReadOnly = !isTeacher,
@@ -139,6 +165,39 @@ class TimetableTableActivity : AppCompatActivity() {
     }
 
     private fun showAddPeriodDialog() {
+        val dialogView = layoutInflater.inflate(android.R.layout.simple_list_item_1, null)
+        
+        // Quick time slot options
+        val timeSlots = arrayOf(
+            "08:00 - 09:00",
+            "09:00 - 10:00",
+            "10:00 - 11:00",
+            "11:00 - 12:00",
+            "12:00 - 13:00",
+            "13:00 - 14:00",
+            "14:00 - 15:00",
+            "15:00 - 16:00",
+            "16:00 - 17:00",
+            "Custom Time"
+        )
+        
+        AlertDialog.Builder(this)
+            .setTitle("Select Time Slot")
+            .setItems(timeSlots) { _, which ->
+                if (which == timeSlots.size - 1) {
+                    // Custom time
+                    showCustomTimeDialog()
+                } else {
+                    // Quick add with predefined time
+                    val times = timeSlots[which].split(" - ")
+                    addPeriodWithTime(times[0], times[1])
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    
+    private fun showCustomTimeDialog() {
         val startTimeInput = EditText(this).apply {
             hint = "Start Time (HH:MM)"
             isFocusable = false
@@ -158,25 +217,30 @@ class TimetableTableActivity : AppCompatActivity() {
         }
         
         AlertDialog.Builder(this)
-            .setTitle("Add New Period")
+            .setTitle("Custom Time Slot")
             .setView(container)
             .setPositiveButton("Add") { _, _ ->
                 val startTime = startTimeInput.text.toString()
                 val endTime = endTimeInput.text.toString()
                 
                 if (startTime.isNotEmpty() && endTime.isNotEmpty()) {
-                    val newPeriod = Period(
-                        periodNumber = periods.size + 1,
-                        startTime = startTime,
-                        endTime = endTime
-                    )
-                    periods.add(newPeriod)
-                    adapter.addPeriod(newPeriod)
-                    Toast.makeText(this, "Period added", Toast.LENGTH_SHORT).show()
+                    addPeriodWithTime(startTime, endTime)
                 }
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+    
+    private fun addPeriodWithTime(startTime: String, endTime: String) {
+        val newPeriod = Period(
+            periodNumber = periods.size + 1,
+            startTime = startTime,
+            endTime = endTime
+        )
+        periods.add(newPeriod)
+        adapter.notifyItemInserted(periods.size - 1)
+        Toast.makeText(this, "Period ${newPeriod.periodNumber} added", Toast.LENGTH_SHORT).show()
+        Log.d("TimetableTable", "Added period: ${newPeriod.periodNumber} (${startTime} - ${endTime})")
     }
 
     private fun showTimePicker(onTimeSelected: (String) -> Unit) {
@@ -187,6 +251,12 @@ class TimetableTableActivity : AppCompatActivity() {
     }
 
     private fun showDeleteConfirmation(position: Int) {
+        // Don't allow deleting the last period - keep at least one row visible
+        if (periods.size <= 1) {
+            Toast.makeText(this, "Cannot delete the last period. At least one period must remain.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
         AlertDialog.Builder(this)
             .setTitle("Delete Period")
             .setMessage("Are you sure you want to delete Period ${position + 1}?")
@@ -204,166 +274,112 @@ class TimetableTableActivity : AppCompatActivity() {
     }
 
     private fun loadTimetableFromServer() {
-        Log.d("TimetableTable", "Loading timetable for $currentBranch - $currentSemester")
+        if (isLoading) {
+            Log.d("TimetableTable", "Already loading, skipping duplicate request")
+            return
+        }
         
-        NetworkManager.apiService.getTabularTimetable(currentBranch, currentSemester)
-            .enqueue(object : Callback<TimetableTableResponse> {
-                override fun onResponse(
-                    call: Call<TimetableTableResponse>,
-                    response: Response<TimetableTableResponse>
-                ) {
-                    if (response.isSuccessful) {
-                        response.body()?.let { timetableResponse ->
-                            runOnUiThread {
-                                if (timetableResponse.success && timetableResponse.timetable != null) {
-                                    // Clear and update periods to avoid duplicates
-                                    periods.clear()
-                                    periods.addAll(timetableResponse.timetable.periods)
-                                    adapter.updatePeriods(periods)
-                                    Log.d("TimetableTable", "Periods updated: ${periods.size} items")
-                                    Toast.makeText(
-                                        this@TimetableTableActivity,
-                                        "✓ Timetable loaded (${periods.size} periods)",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    Log.d("TimetableTable", "Loaded ${periods.size} periods from server")
-                                } else {
-                                    // No timetable found, load sample data for teachers
-                                    if (isTeacher && periods.isEmpty()) {
-                                        loadSampleData()
-                                        Toast.makeText(
-                                            this@TimetableTableActivity,
-                                            "No timetable found. Sample data loaded.",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    } else {
-                                        Toast.makeText(
-                                            this@TimetableTableActivity,
-                                            "No timetable available for this branch/semester",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                }
-                            }
-                        }
-                    } else {
+        isLoading = true
+        Log.d("TimetableTable", "=== LOADING TIMETABLE ===")
+        Log.d("TimetableTable", "Branch: $currentBranch")
+        Log.d("TimetableTable", "Semester: $currentSemester")
+        
+        // Try to load from server first
+        val apiService = NetworkManager.apiService
+        apiService.getTimetableTable(currentBranch, currentSemester).enqueue(object : Callback<TimetableResponse> {
+            override fun onResponse(call: Call<TimetableResponse>, response: Response<TimetableResponse>) {
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val timetableData = response.body()?.timetable
+                    if (timetableData != null && timetableData.periods.isNotEmpty()) {
+                        periods.clear()
+                        periods.addAll(timetableData.periods)
+                        adapter.updatePeriods(timetableData.periods.toList())
+                        
+                        // Save to local storage as backup
+                        saveTimetableLocally(timetableData.periods)
+                        
+                        Log.d("TimetableTable", "✓ Loaded ${periods.size} periods from server")
                         runOnUiThread {
-                            Log.e("TimetableTable", "Failed to load: ${response.code()}")
                             Toast.makeText(
                                 this@TimetableTableActivity,
-                                "⚠ Failed to load timetable (${response.code()})",
+                                "✓ Timetable loaded (${periods.size} periods)",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            // Load sample data as fallback for teachers
-                            if (isTeacher && periods.isEmpty()) {
-                                loadSampleData()
-                            }
                         }
+                        isLoading = false
+                        return
                     }
                 }
-
-                override fun onFailure(call: Call<TimetableTableResponse>, t: Throwable) {
-                    runOnUiThread {
-                        Log.e("TimetableTable", "Network error loading timetable", t)
-                        Toast.makeText(
-                            this@TimetableTableActivity,
-                            "✗ Network error: ${t.message}",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        // Load sample data as fallback for teachers
-                        if (isTeacher && periods.isEmpty()) {
-                            loadSampleData()
-                        }
-                    }
-                }
-            })
+                
+                // Fallback to local storage if server fails
+                loadTimetableFromLocal()
+            }
+            
+            override fun onFailure(call: Call<TimetableResponse>, t: Throwable) {
+                Log.e("TimetableTable", "Failed to load from server", t)
+                // Fallback to local storage
+                loadTimetableFromLocal()
+            }
+        })
     }
-
-    private fun loadSampleData() {
+    
+    private fun loadTimetableFromLocal() {
+        Log.d("TimetableTable", "Loading from local storage (fallback)")
+        
+        val timetableKey = "timetable_${currentBranch}_${currentSemester}"
+        val savedJson = sharedPreferences.getString(timetableKey, null)
+        
+        if (savedJson != null && savedJson.isNotEmpty()) {
+            try {
+                val periodsArray = gson.fromJson(savedJson, Array<Period>::class.java)
+                val savedPeriods = periodsArray.toList()
+                
+                if (savedPeriods.isNotEmpty()) {
+                    periods.clear()
+                    periods.addAll(savedPeriods)
+                    adapter.updatePeriods(savedPeriods.toList())
+                    Log.d("TimetableTable", "✓ Loaded ${periods.size} periods from local storage")
+                    Toast.makeText(
+                        this@TimetableTableActivity,
+                        "✓ Timetable loaded (${periods.size} periods) - Offline",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    showEmptyState()
+                }
+            } catch (e: Exception) {
+                Log.e("TimetableTable", "Error parsing saved timetable", e)
+                showEmptyState()
+            }
+        } else {
+            showEmptyState()
+        }
+        isLoading = false
+    }
+    
+    private fun saveTimetableLocally(periodsToSave: List<Period>) {
+        val timetableKey = "timetable_${currentBranch}_${currentSemester}"
+        val json = gson.toJson(periodsToSave)
+        sharedPreferences.edit().putString(timetableKey, json).apply()
+        Log.d("TimetableTable", "Saved timetable locally as backup")
+    }
+    
+    private fun showEmptyState() {
         periods.clear()
-        periods.addAll(listOf(
-            Period(
-                periodNumber = 1,
-                startTime = "08:00",
-                endTime = "09:00",
-                monday = PeriodEntry("Mathematics", "A101", "Dr. Smith"),
-                tuesday = PeriodEntry("Physics", "B202", "Dr. Johnson"),
-                wednesday = PeriodEntry("Chemistry", "C303", "Dr. Williams"),
-                thursday = PeriodEntry("Mathematics", "A101", "Dr. Smith"),
-                friday = PeriodEntry("Physics Lab", "Lab1", "Dr. Johnson"),
-                saturday = PeriodEntry("Computer Science", "D404", "Dr. Davis")
-            ),
-            Period(
-                periodNumber = 2,
-                startTime = "09:00",
-                endTime = "10:00",
-                monday = PeriodEntry("English", "A102", "Prof. Brown"),
-                tuesday = PeriodEntry("Mathematics", "A101", "Dr. Smith"),
-                wednesday = PeriodEntry("Data Structures", "D405", "Dr. Wilson"),
-                thursday = PeriodEntry("English", "A102", "Prof. Brown"),
-                friday = PeriodEntry("Chemistry Lab", "Lab2", "Dr. Williams"),
-                saturday = PeriodEntry("Project Work", "Lab3", "Dr. Davis")
-            ),
-            Period(
-                periodNumber = 3,
-                startTime = "10:00",
-                endTime = "11:00",
-                monday = PeriodEntry("Computer Science", "D404", "Dr. Davis"),
-                tuesday = PeriodEntry("Chemistry", "C303", "Dr. Williams"),
-                wednesday = PeriodEntry("Physics", "B202", "Dr. Johnson"),
-                thursday = PeriodEntry("Computer Science", "D404", "Dr. Davis"),
-                friday = PeriodEntry("Mathematics Tutorial", "A101", "Dr. Smith"),
-                saturday = PeriodEntry("Seminar", "Auditorium", "Guest Faculty")
-            ),
-            Period(
-                periodNumber = 4,
-                startTime = "11:00",
-                endTime = "12:00",
-                monday = PeriodEntry("BREAK", "", "")
-            ),
-            Period(
-                periodNumber = 5,
-                startTime = "12:00",
-                endTime = "13:00",
-                monday = PeriodEntry("Digital Electronics", "E505", "Dr. Kumar"),
-                tuesday = PeriodEntry("Algorithms", "D406", "Dr. Wilson"),
-                wednesday = PeriodEntry("Computer Networks", "D407", "Dr. Patel"),
-                thursday = PeriodEntry("Digital Electronics", "E505", "Dr. Kumar"),
-                friday = PeriodEntry("Software Engineering", "D408", "Dr. Sharma"),
-                saturday = PeriodEntry("Break", "", "")
-            ),
-            Period(
-                periodNumber = 6,
-                startTime = "13:00",
-                endTime = "14:00",
-                monday = PeriodEntry("LUNCH", "", "")
-            ),
-            Period(
-                periodNumber = 7,
-                startTime = "14:00",
-                endTime = "15:00",
-                monday = PeriodEntry("Database Systems", "D409", "Dr. Singh"),
-                tuesday = PeriodEntry("Operating Systems", "D410", "Dr. Gupta"),
-                wednesday = PeriodEntry("Machine Learning", "AI Lab", "Dr. Sharma"),
-                thursday = PeriodEntry("Database Systems", "D409", "Dr. Singh"),
-                friday = PeriodEntry("Web Development", "D411", "Dr. Patel"),
-                saturday = PeriodEntry("Sports", "Ground", "PE Teacher")
-            ),
-            Period(
-                periodNumber = 8,
-                startTime = "15:00",
-                endTime = "16:00",
-                monday = PeriodEntry("Project Work", "Lab3", "Dr. Davis"),
-                tuesday = PeriodEntry("Elective Course", "E506", "Dr. Kumar"),
-                wednesday = PeriodEntry("Break", "", ""),
-                thursday = PeriodEntry("Project Work", "Lab3", "Dr. Davis"),
-                friday = PeriodEntry("Elective Course", "E506", "Dr. Kumar"),
-                saturday = PeriodEntry("Library Time", "Library", "Librarian")
-            )
+        periods.add(Period(
+            periodNumber = 1,
+            startTime = "08:00",
+            endTime = "09:00"
         ))
-        adapter.updatePeriods(periods)
-        Log.d("TimetableTable", "Sample data loaded: ${periods.size} periods")
+        adapter.updatePeriods(periods.toList())
+        Log.d("TimetableTable", "Showing empty state with 1 default period")
+        Toast.makeText(
+            this@TimetableTableActivity,
+            "No timetable found. Add periods to get started.",
+            Toast.LENGTH_SHORT
+        ).show()
     }
+
 
     private fun saveTimetableToServer() {
         if (periods.isEmpty()) {
@@ -371,108 +387,90 @@ class TimetableTableActivity : AppCompatActivity() {
             return
         }
         
-        val request = TimetableTableRequest(
+        isSaving = true
+        showLoadingIndicator(true)
+        
+        Log.d("TimetableTable", "=== SAVING TIMETABLE ===")
+        Log.d("TimetableTable", "Branch: $currentBranch")
+        Log.d("TimetableTable", "Semester: $currentSemester")
+        Log.d("TimetableTable", "Periods count: ${periods.size}")
+        
+        // Save to local storage first (immediate backup)
+        saveTimetableLocally(periods)
+        
+        // Then sync to server
+        val timetableRequest = TimetableRequest(
             branch = currentBranch,
             semester = currentSemester,
             periods = periods
         )
         
-        Log.d("TimetableTable", "Saving timetable: ${gson.toJson(request)}")
-        
-        NetworkManager.apiService.saveTabularTimetable(request)
-            .enqueue(object : Callback<TimetableTableResponse> {
-                override fun onResponse(
-                    call: Call<TimetableTableResponse>,
-                    response: Response<TimetableTableResponse>
-                ) {
-                    if (response.isSuccessful) {
-                        response.body()?.let { timetableResponse ->
-                            runOnUiThread {
-                                if (timetableResponse.success) {
-                                    Toast.makeText(
-                                        this@TimetableTableActivity,
-                                        "✓ Timetable saved successfully!",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                    Log.d("TimetableTable", "Timetable saved to server successfully")
-                                } else {
-                                    Toast.makeText(
-                                        this@TimetableTableActivity,
-                                        "⚠ Save failed: ${timetableResponse.message}",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            }
-                        }
-                    } else {
-                        runOnUiThread {
-                            Log.e("TimetableTable", "Failed to save: ${response.code()}")
-                            Toast.makeText(
-                                this@TimetableTableActivity,
-                                "✗ Failed to save timetable (${response.code()})",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                }
-
-                override fun onFailure(call: Call<TimetableTableResponse>, t: Throwable) {
-                    runOnUiThread {
-                        Log.e("TimetableTable", "Network error saving timetable", t)
+        val apiService = NetworkManager.apiService
+        apiService.saveTimetableTable(timetableRequest).enqueue(object : Callback<TimetableResponse> {
+            override fun onResponse(call: Call<TimetableResponse>, response: Response<TimetableResponse>) {
+                runOnUiThread {
+                    if (response.isSuccessful && response.body()?.success == true) {
                         Toast.makeText(
                             this@TimetableTableActivity,
-                            "✗ Network error: ${t.message}",
+                            "✓ Timetable saved and synced! (${periods.size} periods)",
                             Toast.LENGTH_LONG
                         ).show()
+                        Log.d("TimetableTable", "✓ Timetable saved to server successfully")
+                    } else {
+                        Toast.makeText(
+                            this@TimetableTableActivity,
+                            "✓ Timetable saved locally (${periods.size} periods) - Server sync failed",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        Log.w("TimetableTable", "Server save failed, but local save succeeded")
                     }
+                    isSaving = false
+                    showLoadingIndicator(false)
                 }
-            })
+            }
+            
+            override fun onFailure(call: Call<TimetableResponse>, t: Throwable) {
+                Log.e("TimetableTable", "Failed to save to server", t)
+                runOnUiThread {
+                    Toast.makeText(
+                        this@TimetableTableActivity,
+                        "✓ Timetable saved locally (${periods.size} periods) - Offline mode",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    isSaving = false
+                    showLoadingIndicator(false)
+                }
+            }
+        })
+    }
+
+
+
+
+
+    private fun showLoadingIndicator(show: Boolean) {
+        runOnUiThread {
+            if (show) {
+                saveTimetableButton.isEnabled = false
+                saveTimetableButton.text = "Saving..."
+            } else {
+                saveTimetableButton.isEnabled = true
+                saveTimetableButton.text = if (isTeacher) "Save Timetable" else "Refresh"
+            }
+        }
     }
 
     private fun setupWebSocketListeners() {
-        // Listen for timetable updates from other users
-        NetworkManager.onTimetableTableUpdated { data ->
-            runOnUiThread {
-                try {
-                    val branch = data.getString("branch")
-                    val semester = data.getString("semester")
-                    
-                    // Only reload if it matches current selection
-                    if (branch == currentBranch && semester == currentSemester) {
-                        Log.d("TimetableTable", "Received real-time update for $branch - $semester")
-                        loadTimetableFromServer()
-                        Toast.makeText(
-                            this@TimetableTableActivity,
-                            "✓ Timetable updated by another user",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                } catch (e: Exception) {
-                    Log.e("TimetableTable", "Error parsing timetable update", e)
-                }
-            }
-        }
-        
-        NetworkManager.onTimetableTableDeleted { data ->
-            runOnUiThread {
-                try {
-                    val branch = data.getString("branch")
-                    val semester = data.getString("semester")
-                    
-                    if (branch == currentBranch && semester == currentSemester) {
-                        Log.d("TimetableTable", "Timetable deleted for $branch - $semester")
-                        periods.clear()
-                        adapter.updatePeriods(periods)
-                        Toast.makeText(
-                            this@TimetableTableActivity,
-                            "Timetable deleted",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                } catch (e: Exception) {
-                    Log.e("TimetableTable", "Error parsing timetable deletion", e)
-                }
-            }
+        // Timetable is now offline-only, no WebSocket listeners needed
+        Log.d("TimetableTable", "Timetable running in offline mode")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Reload timetable when returning to this activity
+        if (::sharedPreferences.isInitialized && !isSaving) {
+            Log.d("TimetableTable", "onResume: Reloading timetable")
+            loadTimetableFromServer()
         }
     }
 
