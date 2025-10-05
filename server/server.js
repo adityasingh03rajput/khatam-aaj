@@ -16,6 +16,12 @@ const BSSIDConfig = require('./models/BSSIDConfig');
 const Classroom = require('./models/Classroom');
 const StudentRecord = require('./models/StudentRecord');
 const TeacherRecord = require('./models/TeacherRecord');
+const PeriodAttendance = require('./models/PeriodAttendance');
+const ActiveSession = require('./models/ActiveSession');
+const User = require('./models/User');
+
+// Services
+const AttendanceService = require('./services/attendanceService');
 
 const app = express();
 const server = http.createServer(app);
@@ -73,48 +79,63 @@ const authenticateAdmin = (req, res, next) => {
     }
 };
 
+// Make io instance available to routes
+app.set('io', io);
+
 // API Routes
+
+// Mount authentication routes
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+
+// Mount period-based attendance routes
+const periodAttendanceRoutes = require('./routes/periodAttendance');
+app.use('/api/period-attendance', periodAttendanceRoutes);
+
+// Mount teacher dashboard routes
+const teacherDashboardRoutes = require('./routes/teacherDashboard');
+app.use('/api/teacher', teacherDashboardRoutes);
 
 // User registration (for students with semester and stream)
 app.post('/api/auth/register', (req, res) => {
     const { username, password, role, semester, branch } = req.body;
-    
+
     if (!username || !password) {
-        return res.status(400).json({ 
-            error: 'Username and password are required' 
+        return res.status(400).json({
+            error: 'Username and password are required'
         });
     }
-    
+
     // Check if user already exists
     const existingUser = SAMPLE_USERS.find(u => u.username === username);
     if (existingUser) {
-        return res.status(409).json({ 
-            error: 'Username already exists' 
+        return res.status(409).json({
+            error: 'Username already exists'
         });
     }
-    
+
     // For students, semester and branch are required
     if (role === 'student' && (!semester || !branch)) {
-        return res.status(400).json({ 
-            error: 'Semester and branch are required for students' 
+        return res.status(400).json({
+            error: 'Semester and branch are required for students'
         });
     }
-    
+
     // Add new user
-    const newUser = { 
-        username, 
-        password, 
+    const newUser = {
+        username,
+        password,
         role: role || 'student',
         semester: semester || null,
         branch: branch || null
     };
     SAMPLE_USERS.push(newUser);
-    
-    res.json({ 
-        success: true, 
+
+    res.json({
+        success: true,
         message: 'Registration successful',
-        user: { 
-            username: newUser.username, 
+        user: {
+            username: newUser.username,
             role: newUser.role,
             semester: newUser.semester,
             branch: newUser.branch
@@ -125,23 +146,23 @@ app.post('/api/auth/register', (req, res) => {
 // Admin login with sample users
 app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
-    
+
     // Check against sample users
     const user = SAMPLE_USERS.find(u => u.username === username && u.password === password);
-    
+
     if (user) {
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             message: 'Login successful',
-            user: { 
-                username: user.username, 
+            user: {
+                username: user.username,
                 role: user.role,
                 semester: user.semester || null,
                 branch: user.branch || null
             }
         });
     } else {
-        res.status(401).json({ 
+        res.status(401).json({
             error: 'Invalid credentials',
             message: 'Please use one of the sample accounts'
         });
@@ -150,8 +171,8 @@ app.post('/api/auth/login', (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: 'ok', 
+    res.json({
+        status: 'ok',
         timestamp: new Date().toISOString(),
         connectedStudents: connectedStudents.size,
         authorizedBSSID: AUTHORIZED_BSSID
@@ -160,7 +181,7 @@ app.get('/api/health', (req, res) => {
 
 // Get authorized BSSID
 app.get('/api/config/bssid', (req, res) => {
-    res.json({ 
+    res.json({
         authorizedBSSID: AUTHORIZED_BSSID,
         message: 'Authorized Wi-Fi BSSID'
     });
@@ -170,8 +191,8 @@ app.get('/api/config/bssid', (req, res) => {
 app.post('/api/verify-bssid', (req, res) => {
     const { bssid } = req.body;
     const isAuthorized = bssid === AUTHORIZED_BSSID;
-    
-    res.json({ 
+
+    res.json({
         authorized: isAuthorized,
         bssid: bssid,
         authorizedBSSID: AUTHORIZED_BSSID
@@ -181,14 +202,14 @@ app.post('/api/verify-bssid', (req, res) => {
 // Student attendance endpoints
 app.post('/api/attendance/start', (req, res) => {
     const { studentName, department, room, bssid } = req.body;
-    
+
     if (bssid !== AUTHORIZED_BSSID) {
-        return res.status(403).json({ 
+        return res.status(403).json({
             error: 'Unauthorized BSSID',
             message: 'Please connect to authorized Wi-Fi network'
         });
     }
-    
+
     // Check if student with same name already exists
     let existingStudentId = null;
     for (const [id, student] of connectedStudents.entries()) {
@@ -197,11 +218,11 @@ app.post('/api/attendance/start', (req, res) => {
             break;
         }
     }
-    
+
     // If student already exists, reject the new connection
     if (existingStudentId) {
         const existingStudent = connectedStudents.get(existingStudentId);
-        return res.status(409).json({ 
+        return res.status(409).json({
             error: 'Username already in use',
             message: `Student "${studentName}" is already marking attendance. Please use a different name or wait for the current session to complete.`,
             existingStudent: {
@@ -211,7 +232,7 @@ app.post('/api/attendance/start', (req, res) => {
             }
         });
     }
-    
+
     const studentId = Date.now().toString();
     const student = {
         id: studentId,
@@ -227,16 +248,16 @@ app.post('/api/attendance/start', (req, res) => {
         totalPausedDuration: 0,
         bssid: bssid
     };
-    
+
     connectedStudents.set(studentId, student);
     attendanceRecords.push(student);
-    
+
     // Broadcast to all connected teachers
     io.emit('student-connected', student);
-    
+
     console.log(`✓ Student "${studentName}" started attendance (ID: ${studentId})`);
-    
-    res.json({ 
+
+    res.json({
         success: true,
         studentId: studentId,
         message: 'Attendance started',
@@ -246,22 +267,22 @@ app.post('/api/attendance/start', (req, res) => {
 
 app.post('/api/attendance/update', (req, res) => {
     const { studentId, timeRemaining, isPresent } = req.body;
-    
+
     const student = connectedStudents.get(studentId);
     if (!student) {
         return res.status(404).json({ error: 'Student not found' });
     }
-    
+
     student.timeRemaining = timeRemaining;
     student.isPresent = isPresent;
     student.lastUpdate = new Date().toISOString();
-    
+
     connectedStudents.set(studentId, student);
-    
+
     // Broadcast update to teachers
     io.emit('student-updated', student);
-    
-    res.json({ 
+
+    res.json({
         success: true,
         student: student
     });
@@ -269,22 +290,22 @@ app.post('/api/attendance/update', (req, res) => {
 
 app.post('/api/attendance/complete', (req, res) => {
     const { studentId } = req.body;
-    
+
     const student = connectedStudents.get(studentId);
     if (!student) {
         return res.status(404).json({ error: 'Student not found' });
     }
-    
+
     student.timeRemaining = 0;
     student.timerState = 'completed';
     student.attendanceStatus = 'attended';
     student.isPresent = true;
     student.completedAt = new Date().toISOString();
-    
+
     // Broadcast completion to teachers
     io.emit('student-completed', student);
-    
-    res.json({ 
+
+    res.json({
         success: true,
         message: 'Attendance completed',
         student: student
@@ -293,30 +314,30 @@ app.post('/api/attendance/complete', (req, res) => {
 
 app.post('/api/attendance/pause', (req, res) => {
     const { studentId } = req.body;
-    
+
     const student = connectedStudents.get(studentId);
     if (!student) {
         return res.status(404).json({ error: 'Student not found' });
     }
-    
+
     if (student.timerState === 'running') {
         student.timerState = 'paused';
         student.attendanceStatus = 'absent';
         student.lastPausedTime = new Date().toISOString();
         student.isPresent = false;
-        
+
         console.log(`⏸️ Student "${student.name}" paused (WiFi disconnected)`);
-        
+
         // Broadcast pause to teachers
         io.emit('student-paused', student);
-        
-        res.json({ 
+
+        res.json({
             success: true,
             message: 'Attendance paused',
             student: student
         });
     } else {
-        res.json({ 
+        res.json({
             success: false,
             message: 'Timer is not running',
             student: student
@@ -326,35 +347,35 @@ app.post('/api/attendance/pause', (req, res) => {
 
 app.post('/api/attendance/resume', (req, res) => {
     const { studentId } = req.body;
-    
+
     const student = connectedStudents.get(studentId);
     if (!student) {
         return res.status(404).json({ error: 'Student not found' });
     }
-    
+
     if (student.timerState === 'paused') {
         student.timerState = 'running';
         student.attendanceStatus = 'attending';
         student.isPresent = true;
-        
+
         // Calculate paused duration
         if (student.lastPausedTime) {
             const pausedDuration = Date.now() - new Date(student.lastPausedTime).getTime();
             student.totalPausedDuration += pausedDuration;
         }
-        
+
         console.log(`▶️ Student "${student.name}" resumed (WiFi reconnected)`);
-        
+
         // Broadcast resume to teachers
         io.emit('student-resumed', student);
-        
-        res.json({ 
+
+        res.json({
             success: true,
             message: 'Attendance resumed',
             student: student
         });
     } else {
-        res.json({ 
+        res.json({
             success: false,
             message: 'Timer is not paused',
             student: student
@@ -364,7 +385,7 @@ app.post('/api/attendance/resume', (req, res) => {
 
 app.get('/api/attendance/list', (req, res) => {
     const students = Array.from(connectedStudents.values());
-    res.json({ 
+    res.json({
         students: students,
         count: students.length,
         timestamp: new Date().toISOString()
@@ -392,15 +413,15 @@ if (!fs.existsSync('uploads')) {
 app.get('/api/timetable-table/:branch/:semester', async (req, res) => {
     try {
         const { branch, semester } = req.params;
-        
+
         console.log(`📥 Fetching timetable from database for ${branch} - ${semester}`);
-        
+
         // Try database first
         let timetable = null;
         if (mongoose.connection.readyState === 1) {
             timetable = await TimetableTable.findOne({ branch, semester });
         }
-        
+
         // Fallback to in-memory if database not available
         if (!timetable) {
             const timetableKey = `${branch}_${semester}`;
@@ -409,7 +430,7 @@ app.get('/api/timetable-table/:branch/:semester', async (req, res) => {
                 timetable = memoryTimetable;
             }
         }
-        
+
         if (!timetable) {
             console.log(`⚠️  No timetable found for ${branch} - ${semester}`);
             return res.json({
@@ -418,13 +439,13 @@ app.get('/api/timetable-table/:branch/:semester', async (req, res) => {
                 message: 'No timetable found'
             });
         }
-        
+
         console.log(`✅ Timetable found:`, {
             branch: timetable.branch,
             semester: timetable.semester,
             periodsCount: timetable.periods.length
         });
-        
+
         res.json({
             success: true,
             timetable: {
@@ -436,7 +457,7 @@ app.get('/api/timetable-table/:branch/:semester', async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Error fetching timetable:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to fetch timetable',
             message: error.message
         });
@@ -446,32 +467,32 @@ app.get('/api/timetable-table/:branch/:semester', async (req, res) => {
 app.post('/api/timetable-table', async (req, res) => {
     try {
         const { branch, semester, periods } = req.body;
-        
+
         console.log(`📥 Received timetable save request:`, {
             branch,
             semester,
             periodsCount: periods ? periods.length : 0
         });
-        
+
         if (!branch || !semester || !periods) {
             console.error('❌ Missing required fields');
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Branch, semester, and periods are required',
                 success: false
             });
         }
-        
+
         // Validate periods array
         if (!Array.isArray(periods)) {
             console.error('❌ Periods is not an array');
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Periods must be an array',
                 success: false
             });
         }
-        
+
         let timetable;
-        
+
         // Save to database if available
         if (mongoose.connection.readyState === 1) {
             timetable = await TimetableTable.findOneAndUpdate(
@@ -481,7 +502,7 @@ app.post('/api/timetable-table', async (req, res) => {
             );
             console.log(`✅ Timetable saved to database`);
         }
-        
+
         // Also save to in-memory storage as backup
         const timetableKey = `${branch}_${semester}`;
         const memoryTimetable = {
@@ -491,7 +512,7 @@ app.post('/api/timetable-table', async (req, res) => {
             updatedAt: new Date()
         };
         timetableStorage.set(timetableKey, memoryTimetable);
-        
+
         // Broadcast to all connected students in real-time
         io.emit('timetable-updated', {
             branch,
@@ -499,9 +520,9 @@ app.post('/api/timetable-table', async (req, res) => {
             periods,
             message: 'Timetable has been updated'
         });
-        
+
         console.log(`📡 Broadcasting timetable update to all students`);
-        
+
         res.json({
             success: true,
             timetable: {
@@ -513,7 +534,7 @@ app.post('/api/timetable-table', async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Error saving timetable:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to save timetable',
             success: false,
             message: error.message
@@ -524,42 +545,42 @@ app.post('/api/timetable-table', async (req, res) => {
 app.delete('/api/timetable-table/:branch/:semester', async (req, res) => {
     try {
         const { branch, semester } = req.params;
-        
+
         let deleted = false;
-        
+
         // Delete from database if available
         if (mongoose.connection.readyState === 1) {
             const result = await TimetableTable.deleteOne({ branch, semester });
             deleted = result.deletedCount > 0;
         }
-        
+
         // Delete from in-memory storage
         const timetableKey = `${branch}_${semester}`;
         timetableStorage.delete(timetableKey);
-        
+
         if (!deleted) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 error: 'Timetable not found',
                 success: false
             });
         }
-        
+
         console.log(`✓ Timetable deleted for ${branch} - ${semester}`);
-        
+
         // Broadcast deletion to all students
         io.emit('timetable-deleted', {
             branch,
             semester,
             message: 'Timetable has been deleted'
         });
-        
+
         res.json({
             success: true,
             message: 'Timetable deleted'
         });
     } catch (error) {
         console.error('Error deleting timetable:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to delete timetable',
             success: false
         });
@@ -571,11 +592,11 @@ app.get('/api/timetable-table-old/:branch/:semester', (req, res) => {
     try {
         const { branch, semester } = req.params;
         const timetableKey = `${branch}_${semester}`;
-        
+
         console.log(`📥 Fetching timetable from OLD memory for ${branch} - ${semester}`);
-        
+
         const timetable = timetableStorage.get(timetableKey);
-        
+
         if (!timetable) {
             console.log(`⚠️  No timetable found in OLD memory for ${branch} - ${semester}`);
             // Return sample timetable data
@@ -669,20 +690,20 @@ app.get('/api/timetable-table-old/:branch/:semester', (req, res) => {
                     saturday: { subject: 'Library Time', room: 'Library', teacher: 'Librarian' }
                 }
             ];
-            
+
             return res.json({
                 success: false,
                 timetable: null,
                 message: 'No timetable found'
             });
         }
-        
+
         console.log(`✅ Timetable found in memory:`, {
             branch: timetable.branch,
             semester: timetable.semester,
             periodsCount: timetable.periods.length
         });
-        
+
         res.json({
             success: true,
             timetable: {
@@ -694,7 +715,7 @@ app.get('/api/timetable-table-old/:branch/:semester', (req, res) => {
         });
     } catch (error) {
         console.error('❌ Error fetching timetable from memory:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to fetch timetable',
             message: error.message
         });
@@ -704,30 +725,30 @@ app.get('/api/timetable-table-old/:branch/:semester', (req, res) => {
 app.post('/api/timetable-table', (req, res) => {
     try {
         const { branch, semester, periods } = req.body;
-        
+
         console.log(`📥 Received timetable save request (OFFLINE MODE):`, {
             branch,
             semester,
             periodsCount: periods ? periods.length : 0
         });
-        
+
         if (!branch || !semester || !periods) {
             console.error('❌ Missing required fields');
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Branch, semester, and periods are required',
                 success: false
             });
         }
-        
+
         // Validate periods array
         if (!Array.isArray(periods)) {
             console.error('❌ Periods is not an array');
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Periods must be an array',
                 success: false
             });
         }
-        
+
         // Save to in-memory storage
         const timetableKey = `${branch}_${semester}`;
         const timetable = {
@@ -736,18 +757,18 @@ app.post('/api/timetable-table', (req, res) => {
             periods,
             updatedAt: new Date()
         };
-        
+
         timetableStorage.set(timetableKey, timetable);
-        
+
         console.log(`✅ Timetable saved to memory:`, {
             key: timetableKey,
             branch: timetable.branch,
             semester: timetable.semester,
             periodsCount: timetable.periods.length
         });
-        
+
         // NO WebSocket broadcast - offline mode
-        
+
         res.json({
             success: true,
             timetable: {
@@ -759,7 +780,7 @@ app.post('/api/timetable-table', (req, res) => {
         });
     } catch (error) {
         console.error('❌ Error saving timetable to memory:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to save timetable',
             success: false,
             message: error.message
@@ -771,27 +792,27 @@ app.delete('/api/timetable-table/:branch/:semester', (req, res) => {
     try {
         const { branch, semester } = req.params;
         const timetableKey = `${branch}_${semester}`;
-        
+
         const deleted = timetableStorage.delete(timetableKey);
-        
+
         if (!deleted) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 error: 'Timetable not found',
                 success: false
             });
         }
-        
+
         console.log(`✓ Timetable deleted from memory for ${branch} - ${semester}`);
-        
+
         // NO WebSocket broadcast - offline mode
-        
+
         res.json({
             success: true,
             message: 'Timetable deleted'
         });
     } catch (error) {
         console.error('Error deleting timetable from memory:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to delete timetable',
             success: false
         });
@@ -802,19 +823,19 @@ app.delete('/api/timetable-table/:branch/:semester', (req, res) => {
 // BSSID Management endpoints
 app.put('/api/config/bssid', (req, res) => {
     const { bssid } = req.body;
-    
+
     if (!bssid) {
         return res.status(400).json({ error: 'BSSID is required' });
     }
-    
+
     AUTHORIZED_BSSID = bssid;
-    
+
     // Broadcast to all connected clients
     io.emit('bssid-updated', { authorizedBSSID: AUTHORIZED_BSSID });
-    
+
     console.log(`✓ BSSID updated to: ${AUTHORIZED_BSSID}`);
-    
-    res.json({ 
+
+    res.json({
         success: true,
         authorizedBSSID: AUTHORIZED_BSSID,
         message: 'BSSID updated successfully'
@@ -823,7 +844,7 @@ app.put('/api/config/bssid', (req, res) => {
 
 // Get all BSSIDs (for multi-location support)
 app.get('/api/config/bssid-list', (req, res) => {
-    res.json({ 
+    res.json({
         bssidList: bssidList,
         count: bssidList.length
     });
@@ -831,16 +852,16 @@ app.get('/api/config/bssid-list', (req, res) => {
 
 app.post('/api/config/bssid-list', (req, res) => {
     const { name, bssid } = req.body;
-    
+
     if (!name || !bssid) {
         return res.status(400).json({ error: 'Name and BSSID are required' });
     }
-    
+
     bssidList.push({ name, bssid });
-    
+
     io.emit('bssid-list-updated', { bssidList });
-    
-    res.json({ 
+
+    res.json({
         success: true,
         bssidList: bssidList
     });
@@ -850,21 +871,21 @@ app.post('/api/config/bssid-list', (req, res) => {
 app.get('/api/students', async (req, res) => {
     try {
         if (mongoose.connection.readyState !== 1) {
-            return res.status(503).json({ 
+            return res.status(503).json({
                 error: 'Database not connected',
                 students: []
             });
         }
-        
+
         const { department, limit } = req.query;
         let query = {};
         if (department) query.department = department;
-        
+
         const students = await Student.find(query)
             .limit(limit ? parseInt(limit) : 100)
             .sort({ startTime: -1 });
-        
-        res.json({ 
+
+        res.json({
             students: students,
             count: students.length
         });
@@ -879,13 +900,13 @@ app.get('/api/students/:id', async (req, res) => {
         if (mongoose.connection.readyState !== 1) {
             return res.status(503).json({ error: 'Database not connected' });
         }
-        
+
         const student = await Student.findOne({ studentId: req.params.id });
-        
+
         if (!student) {
             return res.status(404).json({ error: 'Student not found' });
         }
-        
+
         res.json({ student });
     } catch (error) {
         console.error('Error fetching student:', error);
@@ -898,27 +919,27 @@ app.get('/api/attendance/history', async (req, res) => {
     try {
         if (mongoose.connection.readyState !== 1) {
             // Return in-memory records if DB not connected
-            return res.json({ 
+            return res.json({
                 records: attendanceRecords,
                 count: attendanceRecords.length
             });
         }
-        
+
         const { department, startDate, endDate, limit } = req.query;
         let query = {};
-        
+
         if (department) query.department = department;
         if (startDate || endDate) {
             query.startTime = {};
             if (startDate) query.startTime.$gte = new Date(startDate);
             if (endDate) query.startTime.$lte = new Date(endDate);
         }
-        
+
         const records = await AttendanceRecord.find(query)
             .limit(limit ? parseInt(limit) : 100)
             .sort({ startTime: -1 });
-        
-        res.json({ 
+
+        res.json({
             records: records,
             count: records.length
         });
@@ -932,19 +953,19 @@ app.get('/api/attendance/history', async (req, res) => {
 app.get('/api/attendance/statistics', async (req, res) => {
     try {
         const { department, date } = req.query;
-        
+
         // Calculate statistics from in-memory data
         const activeStudents = Array.from(connectedStudents.values());
         const totalStudents = activeStudents.length;
         const presentStudents = activeStudents.filter(s => s.isPresent).length;
         const absentStudents = totalStudents - presentStudents;
         const completedStudents = activeStudents.filter(s => s.timerState === 'completed').length;
-        
+
         // Calculate average attendance time
-        const avgTime = totalStudents > 0 
+        const avgTime = totalStudents > 0
             ? activeStudents.reduce((sum, s) => sum + (600 - s.timeRemaining), 0) / totalStudents
             : 0;
-        
+
         res.json({
             totalStudents,
             presentStudents,
@@ -963,31 +984,31 @@ app.get('/api/attendance/statistics', async (req, res) => {
 // Random Ring endpoints
 app.post('/api/random-ring/start', (req, res) => {
     const { numberOfStudents } = req.body;
-    
+
     const activeStudents = Array.from(connectedStudents.values()).filter(s => s.isPresent);
-    
+
     if (activeStudents.length === 0) {
         return res.status(400).json({ error: 'No active students' });
     }
-    
+
     const count = Math.min(numberOfStudents, activeStudents.length);
-    
+
     // Randomly select students
     const shuffled = activeStudents.sort(() => 0.5 - Math.random());
     const selected = shuffled.slice(0, count);
-    
+
     randomRingStudents = selected.map(s => ({
         ...s,
         ringStatus: 'pending', // pending, accepted, rejected, student_confirmed
         ringTime: new Date().toISOString()
     }));
-    
+
     // Broadcast to all teachers
     io.emit('random-ring-started', {
         students: randomRingStudents,
         count: count
     });
-    
+
     // Send notification to selected students
     selected.forEach(student => {
         io.emit('random-ring-notification', {
@@ -996,7 +1017,7 @@ app.post('/api/random-ring/start', (req, res) => {
             message: 'You have been selected for random ring! Please mark your presence.'
         });
     });
-    
+
     res.json({
         success: true,
         selectedStudents: randomRingStudents,
@@ -1006,35 +1027,35 @@ app.post('/api/random-ring/start', (req, res) => {
 
 app.post('/api/random-ring/teacher-response', (req, res) => {
     const { studentId, action } = req.body; // action: 'accept' or 'reject'
-    
+
     const student = randomRingStudents.find(s => s.id === studentId);
     if (!student) {
         return res.status(404).json({ error: 'Student not found in random ring' });
     }
-    
+
     if (student.ringStatus === 'student_confirmed') {
-        return res.status(400).json({ 
-            error: 'Student already confirmed presence. Cannot change status.' 
+        return res.status(400).json({
+            error: 'Student already confirmed presence. Cannot change status.'
         });
     }
-    
+
     student.ringStatus = action === 'accept' ? 'accepted' : 'rejected';
-    
+
     const connectedStudent = connectedStudents.get(studentId);
-    
+
     if (action === 'accept') {
         // Check WiFi status and resume timer if connected
         if (connectedStudent) {
             const isWiFiConnected = connectedStudent.bssid === AUTHORIZED_BSSID;
-            
+
             if (isWiFiConnected) {
                 // Resume timer - WiFi is connected
                 connectedStudent.timerState = 'running';
                 connectedStudent.attendanceStatus = 'attending';
                 connectedStudent.isPresent = true;
-                
+
                 console.log(`✓ Student "${connectedStudent.name}" accepted - WiFi OK - Timer RESUMED`);
-                
+
                 // Notify student
                 io.emit('random-ring-accepted', {
                     studentId: studentId,
@@ -1047,9 +1068,9 @@ app.post('/api/random-ring/teacher-response', (req, res) => {
                 connectedStudent.timerState = 'paused';
                 connectedStudent.attendanceStatus = 'absent';
                 connectedStudent.isPresent = false;
-                
+
                 console.log(`⚠️ Student "${connectedStudent.name}" accepted - WiFi DISCONNECTED - Timer PAUSED`);
-                
+
                 // Notify student
                 io.emit('random-ring-accepted', {
                     studentId: studentId,
@@ -1058,9 +1079,9 @@ app.post('/api/random-ring/teacher-response', (req, res) => {
                     timerState: 'paused'
                 });
             }
-            
+
             connectedStudents.set(studentId, connectedStudent);
-            
+
             // Broadcast updated student state to all teachers
             io.emit('student-updated', connectedStudent);
         }
@@ -1072,20 +1093,20 @@ app.post('/api/random-ring/teacher-response', (req, res) => {
             connectedStudent.attendanceStatus = 'absent';
             connectedStudent.timeRemaining = 0;
             connectedStudents.set(studentId, connectedStudent);
-            
+
             console.log(`✗ Student "${connectedStudent.name}" rejected - Timer STOPPED`);
-            
+
             // Broadcast updated student state
             io.emit('student-updated', connectedStudent);
         }
-        
+
         // Notify student
         io.emit('random-ring-rejected', {
             studentId: studentId,
             message: 'Your attendance has been rejected by teacher'
         });
     }
-    
+
     // Broadcast update to all teachers
     io.emit('random-ring-updated', {
         studentId: studentId,
@@ -1093,7 +1114,7 @@ app.post('/api/random-ring/teacher-response', (req, res) => {
         timerState: connectedStudent ? connectedStudent.timerState : 'unknown',
         wifiStatus: connectedStudent && connectedStudent.bssid === AUTHORIZED_BSSID ? 'connected' : 'disconnected'
     });
-    
+
     res.json({
         success: true,
         student: student,
@@ -1105,30 +1126,30 @@ app.post('/api/random-ring/teacher-response', (req, res) => {
 
 app.post('/api/random-ring/student-confirm', (req, res) => {
     const { studentId } = req.body;
-    
+
     const student = randomRingStudents.find(s => s.id === studentId);
     if (!student) {
         return res.status(404).json({ error: 'Student not found in random ring' });
     }
-    
+
     // Student confirmed - lock the status
     student.ringStatus = 'student_confirmed';
     student.confirmedAt = new Date().toISOString();
-    
+
     // Ensure timer continues
     const connectedStudent = connectedStudents.get(studentId);
     if (connectedStudent) {
         connectedStudent.isPresent = true;
         connectedStudents.set(studentId, connectedStudent);
     }
-    
+
     // Broadcast to all teachers
     io.emit('random-ring-student-confirmed', {
         studentId: studentId,
         studentName: student.name,
         message: 'Student confirmed presence - cannot be rejected now'
     });
-    
+
     res.json({
         success: true,
         student: student,
@@ -1146,47 +1167,112 @@ app.get('/api/random-ring/status', (req, res) => {
 // WebSocket connection handling
 io.on('connection', async (socket) => {
     console.log(`Client connected: ${socket.id}`);
-    
+
+    // Handle student socket registration
+    socket.on('register-student', async (data) => {
+        const { studentId, deviceId } = data;
+        if (studentId && deviceId) {
+            try {
+                // Find or create active session
+                let session = await ActiveSession.findOne({ studentId: studentId });
+                
+                if (session) {
+                    // Check if different device
+                    if (session.deviceId && session.deviceId !== deviceId) {
+                        console.log(`⚠️ Device conflict detected for ${studentId}!`);
+                        console.log(`   Old device: ${session.deviceId}, Old socket: ${session.socketId}`);
+                        console.log(`   New device: ${deviceId}, New socket: ${socket.id}`);
+                        
+                        // Force logout old device if it has a socket
+                        if (session.socketId && session.socketId !== socket.id) {
+                            console.log(`   Sending force-logout to old socket: ${session.socketId}`);
+                            io.to(session.socketId).emit('force-logout', {
+                                reason: 'logged_in_another_device',
+                                message: 'You have been logged out because you logged in from another device.'
+                            });
+                        }
+                    }
+                    
+                    // Update session with new socket and device
+                    session.socketId = socket.id;
+                    session.deviceId = deviceId;
+                    session.lastActivity = new Date();
+                    await session.save();
+                    console.log(`✓ Student ${studentId} registered with socket ${socket.id} on device ${deviceId}`);
+                } else {
+                    // No session exists - create a minimal one to track device
+                    const user = await User.findOne({ userId: studentId });
+                    if (user && user.role === 'student') {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][today.getDay()];
+                        
+                        session = new ActiveSession({
+                            studentId: studentId,
+                            studentName: user.name,
+                            branch: user.branch || 'Unknown',
+                            semester: user.semester || 'Unknown',
+                            sessionDate: today,
+                            dayOfWeek: dayOfWeek,
+                            socketId: socket.id,
+                            deviceId: deviceId,
+                            isPresent: false,
+                            totalPeriodsToday: 0,
+                            periodsPresent: 0,
+                            periodsAbsent: 0
+                        });
+                        await session.save();
+                        console.log(`✓ Created new session for ${studentId} with socket ${socket.id} on device ${deviceId}`);
+                    } else {
+                        console.log(`User ${studentId} not found or not a student`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error registering student socket:', error);
+            }
+        }
+    });
+
     // Send current state to newly connected client
     socket.emit('initial-state', {
         students: Array.from(connectedStudents.values()),
         authorizedBSSID: AUTHORIZED_BSSID
     });
-    
+
     // Handle student timer updates
     socket.on('timer-update', (data) => {
         const { studentId, timeRemaining } = data;
         const student = connectedStudents.get(studentId);
-        
+
         if (student) {
             student.timeRemaining = timeRemaining;
             student.lastUpdate = new Date().toISOString();
             connectedStudents.set(studentId, student);
-            
+
             // Broadcast to all teachers
             io.emit('student-timer-update', student);
         }
     });
-    
+
     // Handle student disconnect
     socket.on('student-disconnect', (data) => {
         const { studentId } = data;
         const student = connectedStudents.get(studentId);
-        
+
         if (student) {
             student.isPresent = false;
             student.disconnectedAt = new Date().toISOString();
-            
+
             // Remove student from connected list to free up username
             connectedStudents.delete(studentId);
-            
+
             console.log(`✗ Student "${student.name}" disconnected (ID: ${studentId})`);
-            
+
             // Broadcast disconnect
             io.emit('student-disconnected', student);
         }
     });
-    
+
     // Handle client disconnect
     socket.on('disconnect', () => {
         console.log(`Client disconnected: ${socket.id}`);
@@ -1196,16 +1282,16 @@ io.on('connection', async (socket) => {
 // Timer update loop - decrease time for students with running timers
 setInterval(() => {
     let updated = false;
-    
+
     connectedStudents.forEach((student, studentId) => {
         // Only decrement if timer is running
         if (student.timerState === 'running' && student.timeRemaining > 0) {
             student.timeRemaining--;
             updated = true;
-            
+
             // Broadcast update
             io.emit('student-timer-update', student);
-            
+
             // Check if completed
             if (student.timeRemaining === 0) {
                 student.timerState = 'completed';
@@ -1213,7 +1299,7 @@ setInterval(() => {
                 student.completedAt = new Date().toISOString();
                 console.log(`✓ Student "${student.name}" completed attendance (ID: ${studentId})`);
                 io.emit('student-completed', student);
-                
+
                 // Remove student after completion to free up username
                 // Keep them for 5 seconds so teachers can see completion
                 setTimeout(() => {
@@ -1229,24 +1315,24 @@ setInterval(() => {
 // Disconnect student (manual)
 app.post('/api/attendance/disconnect', (req, res) => {
     const { studentId } = req.body;
-    
+
     const student = connectedStudents.get(studentId);
     if (!student) {
         return res.status(404).json({ error: 'Student not found' });
     }
-    
+
     student.isPresent = false;
     student.disconnectedAt = new Date().toISOString();
-    
+
     // Remove student from connected list
     connectedStudents.delete(studentId);
-    
+
     console.log(`✗ Student "${student.name}" manually disconnected (ID: ${studentId})`);
-    
+
     // Broadcast disconnect
     io.emit('student-disconnected', student);
-    
-    res.json({ 
+
+    res.json({
         success: true,
         message: 'Student disconnected',
         student: student
@@ -1274,12 +1360,12 @@ app.post('/api/attendance/clear-all', (req, res) => {
     connectedStudents.clear();
     attendanceRecords = [];
     randomRingStudents = [];
-    
+
     io.emit('attendance-cleared', { message: 'All attendance cleared' });
-    
+
     console.log(`✓ Cleared ${count} connected students`);
-    
-    res.json({ 
+
+    res.json({
         success: true,
         message: `Cleared ${count} students`,
         clearedCount: count
@@ -1290,16 +1376,16 @@ app.post('/api/attendance/clear-all', (req, res) => {
 app.get('/api/attendance/export', async (req, res) => {
     try {
         const { format = 'json' } = req.query;
-        
+
         const students = Array.from(connectedStudents.values());
-        
+
         if (format === 'csv') {
             // Generate CSV
             let csv = 'Name,Department,Room,Time Remaining,Status,Present,Start Time\n';
             students.forEach(s => {
                 csv += `${s.name},${s.department},${s.room},${s.timeRemaining},${s.attendanceStatus},${s.isPresent},${s.startTime}\n`;
             });
-            
+
             res.setHeader('Content-Type', 'text/csv');
             res.setHeader('Content-Disposition', 'attachment; filename=attendance.csv');
             res.send(csv);
@@ -1323,9 +1409,9 @@ app.get('/api/classrooms', async (req, res) => {
         if (mongoose.connection.readyState !== 1) {
             return res.json({ classrooms: classroomMappings });
         }
-        
+
         const classrooms = await Classroom.find({});
-        res.json({ 
+        res.json({
             classrooms: classrooms,
             count: classrooms.length
         });
@@ -1340,9 +1426,9 @@ app.post('/api/classrooms', async (req, res) => {
         if (mongoose.connection.readyState !== 1) {
             return res.status(503).json({ error: 'Database not connected' });
         }
-        
+
         const { name, bssid, capacity, building, floor } = req.body;
-        
+
         const classroom = new Classroom({
             name,
             bssid,
@@ -1350,12 +1436,12 @@ app.post('/api/classrooms', async (req, res) => {
             building,
             floor
         });
-        
+
         await classroom.save();
-        
+
         io.emit('classroom-added', classroom);
-        
-        res.json({ 
+
+        res.json({
             success: true,
             classroom: classroom
         });
@@ -1370,7 +1456,7 @@ app.post('/api/classrooms', async (req, res) => {
 // Load sample data endpoint
 app.post('/api/setup/sample-data', (req, res) => {
     console.log('📦 Loading sample data...');
-    
+
     const sampleData = {
         students: [
             { studentId: '2024CSE001', name: 'John Doe', email: 'john@example.com', phone: '1234567890', branch: 'CSE', semester: 5, rollNo: 'CSE001', batch: '2024', password: 'student123' },
@@ -1401,15 +1487,15 @@ app.post('/api/setup/sample-data', (req, res) => {
             { title: 'Holiday Notice', content: 'College will be closed tomorrow for maintenance.', category: 'Holiday', target: 'All', postedBy: 'Admin', postedAt: new Date().toISOString() }
         ]
     };
-    
+
     console.log(`✓ Loaded ${sampleData.students.length} students`);
     console.log(`✓ Loaded ${sampleData.teachers.length} teachers`);
     console.log(`✓ Loaded ${sampleData.timetables.length} timetables`);
     console.log(`✓ Loaded ${sampleData.classrooms.length} classroom mappings`);
     console.log(`✓ Loaded ${sampleData.notices.length} notices`);
-    
-    res.json({ 
-        success: true, 
+
+    res.json({
+        success: true,
         message: 'Sample data loaded successfully',
         data: sampleData
     });
@@ -1418,25 +1504,25 @@ app.post('/api/setup/sample-data', (req, res) => {
 // Configure WiFi mappings
 app.post('/api/setup/wifi-mappings', (req, res) => {
     console.log('📡 Configuring WiFi mappings...');
-    
+
     classroomMappings = [
         { classroom: 'Room A101', branch: 'CSE', semester: 5, bssid: 'ee:ee:6d:9d:6f:ba', wifiName: 'College_WiFi_A' },
         { classroom: 'Room A102', branch: 'CSE', semester: 6, bssid: 'ee:ee:6d:9d:6f:bb', wifiName: 'College_WiFi_A2' },
         { classroom: 'Room B201', branch: 'ECE', semester: 5, bssid: 'aa:bb:cc:dd:ee:ff', wifiName: 'College_WiFi_B' },
         { classroom: 'Room C301', branch: 'ME', semester: 5, bssid: '11:22:33:44:55:66', wifiName: 'College_WiFi_C' }
     ];
-    
+
     bssidList = [
         { name: 'Main WiFi - Block A', bssid: 'ee:ee:6d:9d:6f:ba' },
         { name: 'Main WiFi - Block B', bssid: 'aa:bb:cc:dd:ee:ff' },
         { name: 'Main WiFi - Block C', bssid: '11:22:33:44:55:66' }
     ];
-    
+
     console.log(`✓ Configured ${classroomMappings.length} classroom mappings`);
     console.log(`✓ Configured ${bssidList.length} WiFi networks`);
-    
-    res.json({ 
-        success: true, 
+
+    res.json({
+        success: true,
         message: 'WiFi mappings configured successfully',
         classrooms: classroomMappings.length,
         networks: bssidList.length
@@ -1466,35 +1552,35 @@ let biometricData = new Map(); // Key: studentId, Value: { fingerprintData, face
 app.post('/api/biometric/register-fingerprint', async (req, res) => {
     try {
         const { studentId, fingerprintData } = req.body;
-        
+
         if (!studentId || !fingerprintData) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Student ID and fingerprint data are required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Student ID and fingerprint data are required'
             });
         }
 
         // Hash fingerprint data for security
         const hashedFingerprint = await bcrypt.hash(fingerprintData, 12);
-        
+
         // Store or update biometric data
         if (!biometricData.has(studentId)) {
             biometricData.set(studentId, {});
         }
-        
+
         const studentBiometric = biometricData.get(studentId);
         studentBiometric.fingerprintData = hashedFingerprint;
         studentBiometric.fingerprintRegisteredAt = new Date().toISOString();
-        
+
         console.log(`✅ Fingerprint registered for student: ${studentId}`);
-        
+
         // Broadcast to admin panel
         io.emit('biometric-registered', {
             studentId,
             type: 'fingerprint',
             timestamp: new Date().toISOString()
         });
-        
+
         res.json({
             success: true,
             message: 'Fingerprint registered successfully',
@@ -1504,9 +1590,9 @@ app.post('/api/biometric/register-fingerprint', async (req, res) => {
 
     } catch (error) {
         console.error('❌ Fingerprint registration error:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Server error during fingerprint registration' 
+        res.status(500).json({
+            success: false,
+            message: 'Server error during fingerprint registration'
         });
     }
 });
@@ -1515,42 +1601,42 @@ app.post('/api/biometric/register-fingerprint', async (req, res) => {
 app.post('/api/biometric/register-face', async (req, res) => {
     try {
         const { studentId, faceData } = req.body;
-        
+
         if (!studentId || !faceData) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Student ID and face data are required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Student ID and face data are required'
             });
         }
 
         if (faceData.length < 100) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid face data - data too short' 
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid face data - data too short'
             });
         }
 
         // Hash face data for security
         const hashedFace = await bcrypt.hash(faceData, 12);
-        
+
         // Store or update biometric data
         if (!biometricData.has(studentId)) {
             biometricData.set(studentId, {});
         }
-        
+
         const studentBiometric = biometricData.get(studentId);
         studentBiometric.faceData = hashedFace;
         studentBiometric.faceRegisteredAt = new Date().toISOString();
-        
+
         console.log(`✅ Face data registered for student: ${studentId}`);
-        
+
         // Broadcast to admin panel
         io.emit('biometric-registered', {
             studentId,
             type: 'face',
             timestamp: new Date().toISOString()
         });
-        
+
         res.json({
             success: true,
             message: 'Face data registered successfully',
@@ -1560,9 +1646,9 @@ app.post('/api/biometric/register-face', async (req, res) => {
 
     } catch (error) {
         console.error('❌ Face registration error:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Server error during face registration' 
+        res.status(500).json({
+            success: false,
+            message: 'Server error during face registration'
         });
     }
 });
@@ -1573,24 +1659,24 @@ app.post('/api/biometric/verify-fingerprint', async (req, res) => {
         const { studentId, fingerprintData } = req.body;
 
         if (!studentId || !fingerprintData) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Student ID and fingerprint data are required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Student ID and fingerprint data are required'
             });
         }
 
         const studentBiometric = biometricData.get(studentId);
         if (!studentBiometric || !studentBiometric.fingerprintData) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'No fingerprint data registered for this student' 
+            return res.status(404).json({
+                success: false,
+                message: 'No fingerprint data registered for this student'
             });
         }
 
         const startTime = Date.now();
         const isMatch = await bcrypt.compare(fingerprintData, studentBiometric.fingerprintData);
         const verificationTime = Date.now() - startTime;
-        
+
         if (isMatch) {
             console.log(`✅ Fingerprint verified for student: ${studentId} (${verificationTime}ms)`);
             res.json({
@@ -1610,9 +1696,9 @@ app.post('/api/biometric/verify-fingerprint', async (req, res) => {
 
     } catch (error) {
         console.error('❌ Fingerprint verification error:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Server error during verification' 
+        res.status(500).json({
+            success: false,
+            message: 'Server error during verification'
         });
     }
 });
@@ -1623,24 +1709,24 @@ app.post('/api/biometric/verify-face', async (req, res) => {
         const { studentId, faceData } = req.body;
 
         if (!studentId || !faceData) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Student ID and face data are required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Student ID and face data are required'
             });
         }
 
         const studentBiometric = biometricData.get(studentId);
         if (!studentBiometric || !studentBiometric.faceData) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'No face data registered for this student' 
+            return res.status(404).json({
+                success: false,
+                message: 'No face data registered for this student'
             });
         }
 
         const startTime = Date.now();
         const isMatch = await bcrypt.compare(faceData, studentBiometric.faceData);
         const verificationTime = Date.now() - startTime;
-        
+
         if (isMatch) {
             console.log(`✅ Face verified for student: ${studentId} (${verificationTime}ms)`);
             res.json({
@@ -1660,9 +1746,9 @@ app.post('/api/biometric/verify-face', async (req, res) => {
 
     } catch (error) {
         console.error('❌ Face verification error:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Server error during verification' 
+        res.status(500).json({
+            success: false,
+            message: 'Server error during verification'
         });
     }
 });
@@ -1671,7 +1757,7 @@ app.post('/api/biometric/verify-face', async (req, res) => {
 app.get('/api/biometric/status/:studentId', (req, res) => {
     const { studentId } = req.params;
     const studentBiometric = biometricData.get(studentId);
-    
+
     if (!studentBiometric) {
         return res.json({
             success: true,
@@ -1680,7 +1766,7 @@ app.get('/api/biometric/status/:studentId', (req, res) => {
             hasFace: false
         });
     }
-    
+
     res.json({
         success: true,
         studentId,
@@ -1694,23 +1780,23 @@ app.get('/api/biometric/status/:studentId', (req, res) => {
 // Initiate biometric registration session
 app.post('/api/biometric/initiate-registration', (req, res) => {
     const { studentId, studentName } = req.body;
-    
+
     if (!studentId || !studentName) {
-        return res.status(400).json({ 
-            success: false, 
-            message: 'Student ID and name are required' 
+        return res.status(400).json({
+            success: false,
+            message: 'Student ID and name are required'
         });
     }
-    
+
     // Broadcast to mobile app
     io.emit('biometric-registration-request', {
         studentId,
         studentName,
         timestamp: new Date().toISOString()
     });
-    
+
     console.log(`📱 Biometric registration initiated for: ${studentName} (${studentId})`);
-    
+
     res.json({
         success: true,
         message: 'Biometric registration request sent to mobile device',
@@ -1724,19 +1810,19 @@ app.post('/api/biometric/initiate-registration', (req, res) => {
 // Create Student Profile
 app.post('/api/profiles/student', async (req, res) => {
     try {
-        const { 
-            studentId, name, email, phone, branch, semester, 
-            rollNo, batch, parentName, parentPhone, address, 
-            password, role 
+        const {
+            studentId, name, email, phone, branch, semester,
+            rollNo, batch, parentName, parentPhone, address,
+            password, role
         } = req.body;
-        
+
         if (!studentId || !name) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Student ID and name are required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Student ID and name are required'
             });
         }
-        
+
         // Check if student already exists
         const existing = await StudentRecord.findOne({ studentId });
         if (existing) {
@@ -1745,7 +1831,7 @@ app.post('/api/profiles/student', async (req, res) => {
                 message: 'Student ID already exists'
             });
         }
-        
+
         const student = new StudentRecord({
             studentId,
             name,
@@ -1762,11 +1848,11 @@ app.post('/api/profiles/student', async (req, res) => {
             role: role || 'student',
             createdAt: new Date()
         });
-        
+
         await student.save();
-        
+
         console.log(`✅ Student profile created: ${name} (${studentId})`);
-        
+
         res.json({
             success: true,
             message: 'Student profile created successfully',
@@ -1774,8 +1860,8 @@ app.post('/api/profiles/student', async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Error creating student profile:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Failed to create student profile: ' + error.message
         });
     }
@@ -1792,8 +1878,8 @@ app.get('/api/profiles/students', async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Error fetching students:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Failed to fetch students',
             students: []
         });
@@ -1804,22 +1890,22 @@ app.get('/api/profiles/students', async (req, res) => {
 app.get('/api/profiles/student/:id', async (req, res) => {
     try {
         const student = await StudentRecord.findOne({ studentId: req.params.id });
-        
+
         if (!student) {
             return res.status(404).json({
                 success: false,
                 message: 'Student not found'
             });
         }
-        
+
         res.json({
             success: true,
             student
         });
     } catch (error) {
         console.error('❌ Error fetching student:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Failed to fetch student'
         });
     }
@@ -1829,22 +1915,22 @@ app.get('/api/profiles/student/:id', async (req, res) => {
 app.put('/api/profiles/student/:id', async (req, res) => {
     try {
         const { name, department, semester } = req.body;
-        
+
         const student = await StudentRecord.findOneAndUpdate(
             { studentId: req.params.id },
             { name, department, semester, updatedAt: new Date() },
             { new: true }
         );
-        
+
         if (!student) {
             return res.status(404).json({
                 success: false,
                 message: 'Student not found'
             });
         }
-        
+
         console.log(`✅ Student profile updated: ${student.name}`);
-        
+
         res.json({
             success: true,
             message: 'Student profile updated successfully',
@@ -1852,8 +1938,8 @@ app.put('/api/profiles/student/:id', async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Error updating student:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Failed to update student'
         });
     }
@@ -1863,24 +1949,24 @@ app.put('/api/profiles/student/:id', async (req, res) => {
 app.delete('/api/profiles/student/:id', async (req, res) => {
     try {
         const student = await StudentRecord.findOneAndDelete({ studentId: req.params.id });
-        
+
         if (!student) {
             return res.status(404).json({
                 success: false,
                 message: 'Student not found'
             });
         }
-        
+
         console.log(`✅ Student profile deleted: ${student.name}`);
-        
+
         res.json({
             success: true,
             message: 'Student profile deleted successfully'
         });
     } catch (error) {
         console.error('❌ Error deleting student:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Failed to delete student'
         });
     }
@@ -1890,14 +1976,14 @@ app.delete('/api/profiles/student/:id', async (req, res) => {
 app.post('/api/profiles/teacher', async (req, res) => {
     try {
         const { teacherId, name, department, subject } = req.body;
-        
+
         if (!teacherId || !name) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Teacher ID and name are required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Teacher ID and name are required'
             });
         }
-        
+
         // Check if teacher already exists
         const existing = await TeacherRecord.findOne({ teacherId });
         if (existing) {
@@ -1906,7 +1992,7 @@ app.post('/api/profiles/teacher', async (req, res) => {
                 message: 'Teacher ID already exists'
             });
         }
-        
+
         const teacher = new TeacherRecord({
             teacherId,
             name,
@@ -1914,11 +2000,11 @@ app.post('/api/profiles/teacher', async (req, res) => {
             subject: subject || 'General',
             createdAt: new Date()
         });
-        
+
         await teacher.save();
-        
+
         console.log(`✅ Teacher profile created: ${name} (${teacherId})`);
-        
+
         res.json({
             success: true,
             message: 'Teacher profile created successfully',
@@ -1926,8 +2012,8 @@ app.post('/api/profiles/teacher', async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Error creating teacher profile:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Failed to create teacher profile: ' + error.message
         });
     }
@@ -1944,8 +2030,8 @@ app.get('/api/profiles/teachers', async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Error fetching teachers:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Failed to fetch teachers',
             teachers: []
         });
@@ -1956,22 +2042,22 @@ app.get('/api/profiles/teachers', async (req, res) => {
 app.get('/api/profiles/teacher/:id', async (req, res) => {
     try {
         const teacher = await TeacherRecord.findOne({ teacherId: req.params.id });
-        
+
         if (!teacher) {
             return res.status(404).json({
                 success: false,
                 message: 'Teacher not found'
             });
         }
-        
+
         res.json({
             success: true,
             teacher
         });
     } catch (error) {
         console.error('❌ Error fetching teacher:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Failed to fetch teacher'
         });
     }
@@ -1981,22 +2067,22 @@ app.get('/api/profiles/teacher/:id', async (req, res) => {
 app.put('/api/profiles/teacher/:id', async (req, res) => {
     try {
         const { name, department, subject } = req.body;
-        
+
         const teacher = await TeacherRecord.findOneAndUpdate(
             { teacherId: req.params.id },
             { name, department, subject, updatedAt: new Date() },
             { new: true }
         );
-        
+
         if (!teacher) {
             return res.status(404).json({
                 success: false,
                 message: 'Teacher not found'
             });
         }
-        
+
         console.log(`✅ Teacher profile updated: ${teacher.name}`);
-        
+
         res.json({
             success: true,
             message: 'Teacher profile updated successfully',
@@ -2004,8 +2090,8 @@ app.put('/api/profiles/teacher/:id', async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Error updating teacher:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Failed to update teacher'
         });
     }
@@ -2015,24 +2101,24 @@ app.put('/api/profiles/teacher/:id', async (req, res) => {
 app.delete('/api/profiles/teacher/:id', async (req, res) => {
     try {
         const teacher = await TeacherRecord.findOneAndDelete({ teacherId: req.params.id });
-        
+
         if (!teacher) {
             return res.status(404).json({
                 success: false,
                 message: 'Teacher not found'
             });
         }
-        
+
         console.log(`✅ Teacher profile deleted: ${teacher.name}`);
-        
+
         res.json({
             success: true,
             message: 'Teacher profile deleted successfully'
         });
     } catch (error) {
         console.error('❌ Error deleting teacher:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Failed to delete teacher'
         });
     }

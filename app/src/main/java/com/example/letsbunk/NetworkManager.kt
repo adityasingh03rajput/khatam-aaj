@@ -157,6 +157,20 @@ object NetworkManager {
         }
     }
     
+    // Register student socket for force logout
+    fun registerStudentSocket(studentId: String, deviceId: String) {
+        try {
+            val data = JSONObject().apply {
+                put("studentId", studentId)
+                put("deviceId", deviceId)
+            }
+            socket?.emit("register-student", data)
+            Log.d("NetworkManager", "Registered student socket: $studentId with device: $deviceId")
+        } catch (e: Exception) {
+            Log.e("NetworkManager", "Error registering student socket", e)
+        }
+    }
+    
     // Listen for initial state
     fun onInitialState(callback: (JSONObject) -> Unit) {
         socket?.on("initial-state") { args ->
@@ -451,6 +465,19 @@ object NetworkManager {
                 callback(data)
             } catch (e: Exception) {
                 Log.e("NetworkManager", "Error parsing biometric registration request", e)
+            }
+        }
+    }
+    
+    // Force logout listener
+    fun onForceLogout(callback: (JSONObject) -> Unit) {
+        socket?.on("force-logout") { args ->
+            try {
+                val data = args[0] as JSONObject
+                Log.d("NetworkManager", "Force logout received: $data")
+                callback(data)
+            } catch (e: Exception) {
+                Log.e("NetworkManager", "Error parsing force logout", e)
             }
         }
     }

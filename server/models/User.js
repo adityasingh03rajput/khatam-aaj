@@ -1,24 +1,17 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 
 /**
- * Unified User Model for Students and Teachers
- * Replaces separate StudentRecord and TeacherRecord models
+ * User Model for Authentication
+ * Supports both Student and Teacher roles
  */
 const userSchema = new mongoose.Schema({
-    // Common fields
     userId: {
         type: String,
         required: true,
         unique: true,
-        trim: true,
-        uppercase: true,
-        index: true
-    },
-    name: {
-        type: String,
-        required: true,
-        trim: true,
-        index: true
+        index: true,
+        trim: true
     },
     email: {
         type: String,
@@ -26,223 +19,124 @@ const userSchema = new mongoose.Schema({
         unique: true,
         lowercase: true,
         trim: true,
-        validate: {
-            validator: function(v) {
-                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-            },
-            message: props => `${props.value} is not a valid email!`
-        }
-    },
-    phone: {
-        type: String,
-        required: true,
-        validate: {
-            validator: function(v) {
-                return /^[0-9]{10}$/.test(v);
-            },
-            message: props => `${props.value} is not a valid 10-digit phone number!`
-        }
-    },
-    department: {
-        type: String,
-        required: true,
-        index: true,
-        trim: true
-    },
-    userType: {
-        type: String,
-        required: true,
-        enum: ['student', 'teacher', 'admin'],
         index: true
     },
-    
-    // Student-specific fields
-    rollNumber: {
+    password: {
         type: String,
-        trim: true,
-        uppercase: true,
-        sparse: true, // Only required for students
-        validate: {
-            validator: function(v) {
-                return this.userType !== 'student' || (v && v.length > 0);
-            },
-            message: 'Roll number is required for students'
-        }
+        required: true,
+        minlength: 6
+    },
+    name: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    role: {
+        type: String,
+        enum: ['student', 'teacher', 'admin'],
+        required: true,
+        index: true
+    },
+    // Student-specific fields
+    branch: {
+        type: String,
+        trim: true
     },
     semester: {
         type: String,
-        trim: true,
-        validate: {
-            validator: function(v) {
-                return this.userType !== 'student' || (v && v.length > 0);
-            },
-            message: 'Semester is required for students'
-        }
+        trim: true
     },
-    branch: {
-        type: String,
-        trim: true,
-        index: true,
-        validate: {
-            validator: function(v) {
-                return this.userType !== 'student' || (v && v.length > 0);
-            },
-            message: 'Branch is required for students'
-        }
-    },
-    section: {
-        type: String,
-        default: 'A',
-        trim: true,
-        uppercase: true
-    },
-    guardianName: {
+    rollNo: {
         type: String,
         trim: true
     },
-    guardianPhone: {
-        type: String,
-        validate: {
-            validator: function(v) {
-                return !v || /^[0-9]{10}$/.test(v);
-            },
-            message: props => `${props.value} is not a valid 10-digit phone number!`
-        }
-    },
-    
     // Teacher-specific fields
-    employeeId: {
-        type: String,
-        trim: true,
-        uppercase: true,
-        sparse: true, // Only required for teachers
-        validate: {
-            validator: function(v) {
-                return this.userType !== 'teacher' || (v && v.length > 0);
-            },
-            message: 'Employee ID is required for teachers'
-        }
-    },
-    subjects: [{
-        subjectName: {
-            type: String,
-            trim: true
-        },
-        subjectCode: {
-            type: String,
-            trim: true
-        },
-        branch: {
-            type: String,
-            trim: true
-        },
-        semester: {
-            type: String,
-            trim: true
-        }
-    }],
-    designation: {
-        type: String,
-        default: 'Assistant Professor',
-        trim: true
-    },
-    qualification: {
+    department: {
         type: String,
         trim: true
     },
-    experience: {
-        type: Number,
-        default: 0,
-        min: 0
-    },
-    specialization: {
+    subject: {
         type: String,
         trim: true
     },
-    
     // Common fields
-    academicYear: {
-        type: String,
-        default: () => {
-            const year = new Date().getFullYear();
-            return `${year}-${year + 1}`;
-        }
-    },
-    dateOfBirth: {
-        type: Date
-    },
-    address: {
+    phone: {
         type: String,
         trim: true
-    },
-    joiningDate: {
-        type: Date,
-        default: Date.now
     },
     isActive: {
         type: Boolean,
         default: true,
         index: true
     },
-    
-    // Authentication fields
-    username: {
-        type: String,
-        unique: true,
-        sparse: true,
-        trim: true,
-        lowercase: true
+    lastLogin: {
+        type: Date
     },
-    password: {
-        type: String,
-        select: false // Don't include in queries by default
+    profilePicture: {
+        type: String
     },
-    role: {
-        type: String,
-        enum: ['student', 'teacher', 'admin'],
-        default: function() {
-            return this.userType;
-        }
+    // Biometric data (hashed)
+    fingerprintHash: {
+        type: String
+    },
+    faceHash: {
+        type: String
     }
 }, {
     timestamps: true
 });
 
-// Compound indexes for efficient queries
-userSchema.index({ userType: 1, department: 1, isActive: 1 });
-userSchema.index({ branch: 1, semester: 1, section: 1 }); // For students
-userSchema.index({ department: 1, designation: 1 }); // For teachers
-userSchema.index({ academicYear: 1, isActive: 1 });
-
-// Virtual for full name display
-userSchema.virtual('displayName').get(function() {
-    return `${this.name} (${this.userType === 'student' ? this.rollNumber : this.employeeId})`;
+// Hash password before saving
+userSchema.pre('save', async function(next) {
+    if (!this.isModified('password')) {
+        return next();
+    }
+    
+    try {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+    } catch (error) {
+        next(error);
+    }
 });
 
-// Methods
-userSchema.methods.isStudent = function() {
-    return this.userType === 'student';
+// Method to compare password
+userSchema.methods.comparePassword = async function(candidatePassword) {
+    try {
+        return await bcrypt.compare(candidatePassword, this.password);
+    } catch (error) {
+        throw error;
+    }
 };
 
-userSchema.methods.isTeacher = function() {
-    return this.userType === 'teacher';
+// Method to get public profile (without sensitive data)
+userSchema.methods.getPublicProfile = function() {
+    const profile = {
+        userId: this.userId,
+        email: this.email,
+        name: this.name,
+        role: this.role,
+        phone: this.phone,
+        isActive: this.isActive,
+        lastLogin: this.lastLogin
+    };
+    
+    if (this.role === 'student') {
+        profile.branch = this.branch;
+        profile.semester = this.semester;
+        profile.rollNo = this.rollNo;
+    } else if (this.role === 'teacher') {
+        profile.department = this.department;
+        profile.subject = this.subject;
+    }
+    
+    return profile;
 };
 
-userSchema.methods.isAdmin = function() {
-    return this.userType === 'admin';
-};
-
-// Static methods
-userSchema.statics.findStudents = function(filters = {}) {
-    return this.find({ userType: 'student', isActive: true, ...filters });
-};
-
-userSchema.statics.findTeachers = function(filters = {}) {
-    return this.find({ userType: 'teacher', isActive: true, ...filters });
-};
-
-userSchema.statics.findByDepartment = function(department) {
-    return this.find({ department, isActive: true });
-};
+// Indexes for efficient queries
+userSchema.index({ role: 1, isActive: 1 });
+userSchema.index({ branch: 1, semester: 1 });
+userSchema.index({ department: 1 });
 
 module.exports = mongoose.model('User', userSchema);

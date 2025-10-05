@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <objectAnimator
+            android:propertyName="translationZ"
+            android:duration="100"
+            android:valueTo="@dimen/elevation_1"
+            android:valueType="floatType"/>
+    </item>
+    <item android:state_enabled="true">
+        <objectAnimator
+            android:propertyName="translationZ"
+            android:duration="100"
+            android:valueTo="@dimen/elevation_2"
+            android:valueType="floatType"/>
+    </item>
+    <item>
+        <objectAnimator
+            android:propertyName="translationZ"
+            android:duration="100"
+            android:valueTo="0dp"
+            android:valueType="floatType"/>
+    </item>
+</selector>

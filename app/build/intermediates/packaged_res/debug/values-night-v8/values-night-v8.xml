@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="background">#121212</color>
+    <color name="background_gradient_end">#1E1E1E</color>
+    <color name="background_gradient_start">#121212</color>
+    <color name="background_light">#121212</color>
+    <color name="card">#2D2D2D</color>
+    <color name="card_background">#2D2D2D</color>
+    <color name="divider">#333333</color>
+    <color name="info_light">#1B2A3A</color>
+    <color name="success_light">#1B3A1F</color>
+    <color name="surface">#1E1E1E</color>
+    <color name="text_primary">#E0E0E0</color>
+    <color name="text_secondary">#A0A0A0</color>
+    <color name="warning_light">#3A2F1B</color>
+    <style name="Theme.LetsBunk" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary_dark</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        
+        
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorSecondaryVariant">@color/accent_dark</item>
+        <item name="colorOnSecondary">@android:color/white</item>
+        
+        
+        <item name="android:colorBackground">@color/background</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        
+        
+        <item name="android:statusBarColor">@color/background_night</item>
+        <item name="android:windowLightStatusBar">false</item>
+        
+        
+        <item name="actionBarStyle">@style/ActionBar.LetsBunk</item>
+        
+        
+        <item name="materialCardViewStyle">@style/Card.LetsBunk</item>
+        
+        
+        <item name="materialButtonStyle">@style/Button.LetsBunk</item>
+    </style>
+</resources>

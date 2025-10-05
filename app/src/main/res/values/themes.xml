@@ -70,4 +70,10 @@
     <style name="Button.LetsBunk.Error">
         <item name="backgroundTint">@color/error</item>
     </style>
+    
+    <!-- Calendar Date Text Style -->
+    <style name="CalendarDateTextAppearance" parent="TextAppearance.AppCompat.Small">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
 </resources>

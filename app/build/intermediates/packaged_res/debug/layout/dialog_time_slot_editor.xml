@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Edit Time Slot"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+
+    <Spinner
+        android:id="@+id/daySpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"/>
+
+    <Spinner
+        android:id="@+id/lectureSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/subjectInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Subject (e.g., ENGLISH, MATH)"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/teacherInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Teacher Name (e.g., Mr. Rupesh)"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/roomInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Room Number (e.g., A201)"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/startTimeInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Start Time"
+        android:inputType="time"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/endTimeInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="End Time"
+        android:inputType="time"
+        android:layout_marginBottom="16dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/cancelEditButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Cancel"
+            android:layout_marginEnd="8dp"/>
+
+        <Button
+            android:id="@+id/saveSlotButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Save"
+            android:layout_marginStart="8dp"/>
+    </LinearLayout>
+</LinearLayout>

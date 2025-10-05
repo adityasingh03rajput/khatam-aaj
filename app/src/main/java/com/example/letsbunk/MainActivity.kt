@@ -72,6 +72,15 @@ class MainActivity : AppCompatActivity() {
     private var isStudent = false // To track user role
     private lateinit var runnable: Runnable
     private lateinit var sharedPreferences: SharedPreferences
+    
+    // Logged-in user data
+    private var loggedInUserId: String = ""
+    private var loggedInUserName: String = ""
+    private var loggedInUserRole: String = ""
+    private var loggedInUserBranch: String? = null
+    private var deviceId: String = ""
+    private var loggedInUserSemester: String? = null
+    private var loggedInUserDepartment: String? = null
     private val gson = Gson()
     private val attendanceList = mutableListOf<StudentData>()
     private var currentStudentId: String? = null
@@ -98,8 +107,21 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        sharedPreferences = getSharedPreferences("LetsBunkPrefs", Context.MODE_PRIVATE)
+        sharedPreferences = getSharedPreferences(LoginActivity.PREF_NAME, Context.MODE_PRIVATE)
         wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        
+        // Get or generate device ID
+        deviceId = getOrCreateDeviceId()
+        
+        // Get logged-in user data from intent or SharedPreferences
+        loadUserData()
+        
+        // Check if user is logged in
+        if (loggedInUserId.isEmpty()) {
+            // Not logged in, redirect to login
+            redirectToLogin()
+            return
+        }
         
         // Connect to server
         connectToServer()
@@ -113,18 +135,87 @@ class MainActivity : AppCompatActivity() {
         initTimer()
         setupBiometricListener()
         
-        // Check if user role was previously selected
-        if (!sharedPreferences.contains("isStudent")) {
-            showRoleSelectionDialog()
+        // Set user role and update UI
+        isStudent = loggedInUserRole == "student"
+        userName = loggedInUserName
+        currentStudentId = if (isStudent) loggedInUserId else null
+        
+        if (isStudent) {
+            updateUIForStudent()
         } else {
-            isStudent = sharedPreferences.getBoolean("isStudent", false)
-            userName = sharedPreferences.getString("userName", "") ?: ""
-            if (isStudent) {
-                updateUIForStudent()
-            } else {
-                updateUIForTeacher()
-            }
+            updateUIForTeacher()
         }
+        
+        // Show welcome message
+        Toast.makeText(this, "Welcome, $loggedInUserName!", Toast.LENGTH_SHORT).show()
+    }
+    
+    private fun getOrCreateDeviceId(): String {
+        // Try to get existing device ID
+        var id = sharedPreferences.getString("DEVICE_ID", null)
+        
+        if (id == null) {
+            // Generate a unique device ID using Android ID and timestamp
+            val androidId = android.provider.Settings.Secure.getString(
+                contentResolver,
+                android.provider.Settings.Secure.ANDROID_ID
+            )
+            val timestamp = System.currentTimeMillis()
+            val combined = "$androidId-$timestamp"
+            
+            // Create a hash for the device ID
+            val digest = MessageDigest.getInstance("SHA-256")
+            val hash = digest.digest(combined.toByteArray())
+            id = Base64.encodeToString(hash, Base64.NO_WRAP).take(32)
+            
+            // Save it
+            sharedPreferences.edit().putString("DEVICE_ID", id).apply()
+        }
+        
+        return id
+    }
+    
+    private fun loadUserData() {
+        // Try to get from intent first (fresh login)
+        loggedInUserId = intent.getStringExtra("USER_ID") ?: ""
+        loggedInUserName = intent.getStringExtra("USER_NAME") ?: ""
+        loggedInUserRole = intent.getStringExtra("USER_ROLE") ?: ""
+        loggedInUserBranch = intent.getStringExtra("USER_BRANCH")
+        loggedInUserSemester = intent.getStringExtra("USER_SEMESTER")
+        loggedInUserDepartment = intent.getStringExtra("USER_DEPARTMENT")
+        
+        // If not in intent, try SharedPreferences (app restart)
+        if (loggedInUserId.isEmpty()) {
+            loggedInUserId = sharedPreferences.getString(LoginActivity.KEY_USER_ID, "") ?: ""
+            loggedInUserName = sharedPreferences.getString(LoginActivity.KEY_USER_NAME, "") ?: ""
+            loggedInUserRole = sharedPreferences.getString(LoginActivity.KEY_USER_ROLE, "") ?: ""
+            loggedInUserBranch = sharedPreferences.getString(LoginActivity.KEY_USER_BRANCH, null)
+            loggedInUserSemester = sharedPreferences.getString(LoginActivity.KEY_USER_SEMESTER, null)
+            loggedInUserDepartment = sharedPreferences.getString(LoginActivity.KEY_USER_DEPARTMENT, null)
+        }
+    }
+    
+    private fun redirectToLogin() {
+        // Clear saved credentials
+        sharedPreferences.edit().apply {
+            remove(LoginActivity.KEY_TOKEN)
+            remove(LoginActivity.KEY_USER_ID)
+            remove(LoginActivity.KEY_USER_NAME)
+            remove(LoginActivity.KEY_USER_ROLE)
+            remove(LoginActivity.KEY_USER_BRANCH)
+            remove(LoginActivity.KEY_USER_SEMESTER)
+            remove(LoginActivity.KEY_USER_DEPARTMENT)
+            apply()
+        }
+        
+        // Disconnect socket
+        NetworkManager.disconnectSocket()
+        
+        // Redirect to login
+        val intent = android.content.Intent(this, LoginActivity::class.java)
+        intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
     }
 
     private fun initializeViews() {
@@ -156,6 +247,12 @@ class MainActivity : AppCompatActivity() {
                         Toast.makeText(this, "✓ Connected to server", Toast.LENGTH_SHORT).show()
                         fetchAuthorizedBSSID()
                         setupWebSocketListeners()
+                        
+                        // Register student socket if logged in as student
+                        if (isStudent && currentStudentId != null) {
+                            NetworkManager.registerStudentSocket(currentStudentId!!, deviceId)
+                        }
+                        
                         updateConnectionStatusUI(true)
                     }
                 },
@@ -221,6 +318,34 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupWebSocketListeners() {
+        // Listen for force logout
+        NetworkManager.onForceLogout { data ->
+            runOnUiThread {
+                try {
+                    val reason = data.optString("reason", "unknown")
+                    val message = data.optString("message", "You have been logged out.")
+                    
+                    // Stop timer and save state
+                    if (isRunning) {
+                        saveTimerState(false, seconds)
+                        stopTimer()
+                    }
+                    
+                    // Show dialog
+                    AlertDialog.Builder(this)
+                        .setTitle("Logged Out")
+                        .setMessage(message)
+                        .setPositiveButton("OK") { _, _ ->
+                            redirectToLogin()
+                        }
+                        .setCancelable(false)
+                        .show()
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Error handling force logout", e)
+                }
+            }
+        }
+        
         // Listen for initial state
         NetworkManager.onInitialState { data ->
             runOnUiThread {
@@ -763,10 +888,7 @@ class MainActivity : AppCompatActivity() {
             dialogInterface.dismiss()
             
             if (isStudent) {
-                // For student, show the name input dialog and proceed with attendance
-                if (userName.isEmpty()) {
-                    showNameInputDialog()
-                }
+                // For student, proceed with attendance
                 updateUIForStudent()
             } else {
                 // For teacher, show welcome message and hide attendance UI
@@ -806,12 +928,47 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadAttendanceData() {
-        // Don't load sample data - only show real-time students from server
-        // Clear any existing data
+        // Load all active sessions from server
         attendanceList.clear()
-        if (::attendanceAdapter.isInitialized) {
-            attendanceAdapter.updateStudents(attendanceList)
-        }
+        
+        NetworkManager.apiService.getActiveSessions().enqueue(object : Callback<ActiveSessionsResponse> {
+            override fun onResponse(call: Call<ActiveSessionsResponse>, response: Response<ActiveSessionsResponse>) {
+                if (response.isSuccessful) {
+                    response.body()?.sessions?.forEach { session ->
+                        val student = StudentData(
+                            id = session.studentId,
+                            name = session.studentName,
+                            department = session.branch,
+                            room = "Room 101",
+                            timeRemaining = session.timerState?.secondsRemaining ?: 600,
+                            timerState = if (session.timerState?.isRunning == true) 
+                                StudentData.TimerState.RUNNING 
+                            else 
+                                StudentData.TimerState.PAUSED,
+                            attendanceStatus = if (session.isPresent) 
+                                StudentData.AttendanceStatus.ATTENDING 
+                            else 
+                                StudentData.AttendanceStatus.ABSENT,
+                            isPresent = session.isPresent,
+                            bssid = session.bssid ?: "",
+                            startTime = ""
+                        )
+                        attendanceList.add(student)
+                    }
+                    
+                    runOnUiThread {
+                        if (::attendanceAdapter.isInitialized) {
+                            attendanceAdapter.updateStudents(attendanceList)
+                        }
+                        Log.d("MainActivity", "Loaded ${attendanceList.size} active sessions")
+                    }
+                }
+            }
+            
+            override fun onFailure(call: Call<ActiveSessionsResponse>, t: Throwable) {
+                Log.e("MainActivity", "Failed to load active sessions", t)
+            }
+        })
     }
 
 
@@ -1005,46 +1162,88 @@ class MainActivity : AppCompatActivity() {
         markAttendanceButton.alpha = if (markAttendanceButton.isEnabled) 1.0f else 0.6f
     }
 
-    private fun showNameInputDialog() {
-        try {
-            val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_name_input, null)
-            val nameInput = dialogView.findViewById<EditText>(R.id.nameInput)
-        
-        // Pre-fill with saved name if exists
-        val savedName = sharedPreferences.getString("userName", "")
-        nameInput.setText(savedName)
 
-        AlertDialog.Builder(this)
-            .setTitle("Enter Your Name")
-            .setView(dialogView)
-            .setPositiveButton("OK") { _, _ ->
-                val enteredName = nameInput.text.toString().trim()
-                if (enteredName.isNotEmpty()) {
-                    // Save the entered name
-                    userName = enteredName
-                    sharedPreferences.edit().putString("userName", userName).apply()
-                    updateMarkAttendanceButtonState()
+
+    private fun saveTimerState(running: Boolean, secondsLeft: Int) {
+        if (currentStudentId.isNullOrEmpty()) return
+        
+        val request = TimerStateRequest(
+            studentId = currentStudentId!!,
+            isRunning = running,
+            secondsRemaining = secondsLeft
+        )
+        
+        NetworkManager.apiService.updateTimerState(request).enqueue(object : Callback<TimerStateResponse> {
+            override fun onResponse(call: Call<TimerStateResponse>, response: Response<TimerStateResponse>) {
+                if (response.isSuccessful) {
+                    Log.d("MainActivity", "Timer state saved: running=$running, seconds=$secondsLeft")
                 } else {
-                    Toast.makeText(this, "Please enter a valid name", Toast.LENGTH_SHORT).show()
-                    showNameInputDialog() // Show again if invalid
+                    Log.e("MainActivity", "Failed to save timer state: ${response.code()}")
                 }
             }
-            .setNegativeButton("Cancel", null)
-            .setCancelable(false)
-            .show()
-        } catch (e: Exception) {
-            Log.e("MainActivity", "Error showing name dialog", e)
-            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-        }
+            
+            override fun onFailure(call: Call<TimerStateResponse>, t: Throwable) {
+                Log.e("MainActivity", "Error saving timer state", t)
+            }
+        })
+    }
+    
+    private fun loadTimerState() {
+        if (currentStudentId.isNullOrEmpty()) return
+        
+        NetworkManager.apiService.getTimerState(currentStudentId!!).enqueue(object : Callback<TimerStateResponse> {
+            override fun onResponse(call: Call<TimerStateResponse>, response: Response<TimerStateResponse>) {
+                if (response.isSuccessful) {
+                    response.body()?.timerState?.let { state ->
+                        runOnUiThread {
+                            seconds = state.secondsRemaining
+                            if (state.isRunning && isConnectedToAuthorizedWifi) {
+                                isRunning = true
+                                handler.post(runnable)
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    "Timer resumed from ${seconds / 60}:${String.format("%02d", seconds % 60)}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            updateTimerDisplay()
+                            updateMarkAttendanceButtonState()
+                        }
+                    }
+                }
+            }
+            
+            override fun onFailure(call: Call<TimerStateResponse>, t: Throwable) {
+                Log.e("MainActivity", "Error loading timer state", t)
+            }
+        })
     }
 
     private fun initTimer() {
         runnable = Runnable {
             if (isRunning && isConnectedToAuthorizedWifi) {
-                // Only update display, server handles countdown
-                updateTimerDisplay()
+                // Countdown locally
+                if (seconds > 0) {
+                    seconds--
+                    updateTimerDisplay()
+                    
+                    // Save state every 10 seconds
+                    if (seconds % 10 == 0) {
+                        saveTimerState(true, seconds)
+                    }
+                } else {
+                    // Timer completed
+                    stopTimer()
+                    saveTimerState(false, 0)
+                    Toast.makeText(this, "Attendance time completed!", Toast.LENGTH_LONG).show()
+                }
                 handler.postDelayed(runnable, TIMER_INTERVAL)
             }
+        }
+        
+        // Load saved timer state if student
+        if (isStudent && currentStudentId != null) {
+            loadTimerState()
         }
     }
 
@@ -1066,7 +1265,8 @@ class MainActivity : AppCompatActivity() {
                     studentName = userName,
                     department = department,
                     room = currentRoom,
-                    bssid = currentBSSID
+                    bssid = currentBSSID,
+                    deviceId = deviceId
                 )
                 
                 NetworkManager.apiService.startAttendance(request)
@@ -1088,19 +1288,16 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 }
                             } else if (response.code() == 409) {
-                                // Username already in use
+                                // User already active on another device
                                 runOnUiThread {
                                     stopTimer()
                                     isRunning = false
                                     updateMarkAttendanceButtonState()
                                     
                                     AlertDialog.Builder(this@MainActivity)
-                                        .setTitle("Username Already In Use")
-                                        .setMessage("Someone with the name \"$userName\" is already marking attendance. Please use a different name.")
-                                        .setPositiveButton("Change Name") { _, _ ->
-                                            showNameInputDialog()
-                                        }
-                                        .setNegativeButton("Cancel", null)
+                                        .setTitle("Already Active on Another Device")
+                                        .setMessage("Your account is already active on another device. Please log out from the other device first.")
+                                        .setPositiveButton("OK", null)
                                         .show()
                                 }
                             } else {
@@ -1141,6 +1338,12 @@ class MainActivity : AppCompatActivity() {
         wasRunning = isRunning // Store the running state
         isRunning = false
         handler.removeCallbacks(runnable)
+        
+        // Save timer state when stopping
+        if (currentStudentId != null) {
+            saveTimerState(false, seconds)
+        }
+        
         updateMarkAttendanceButtonState()
         
         if (seconds <= 0) {
@@ -1397,15 +1600,66 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    override fun onPause() {
+        super.onPause()
+        // Save timer state when app goes to background
+        if (isStudent && currentStudentId != null && isRunning) {
+            saveTimerState(true, seconds)
+        }
+    }
+    
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacks(runnable)
         
-        // Disconnect from server
+        // Save timer state before destroying
         if (isStudent && currentStudentId != null) {
+            saveTimerState(isRunning, seconds)
             NetworkManager.emitStudentDisconnect(currentStudentId!!)
         }
         NetworkManager.disconnectSocket()
+    }
+    
+    // Menu removed - using button instead
+    
+    private fun showProfileDialog() {
+        val message = buildString {
+            append("Name: $loggedInUserName\n")
+            append("User ID: $loggedInUserId\n")
+            append("Role: ${loggedInUserRole.capitalize()}\n")
+            if (isStudent) {
+                append("Branch: ${loggedInUserBranch ?: "N/A"}\n")
+                append("Semester: ${loggedInUserSemester ?: "N/A"}")
+            } else {
+                append("Department: ${loggedInUserDepartment ?: "N/A"}")
+            }
+        }
+        
+        AlertDialog.Builder(this)
+            .setTitle("Profile")
+            .setMessage(message)
+            .setPositiveButton("OK", null)
+            .show()
+    }
+    
+    private fun performLogout() {
+        AlertDialog.Builder(this)
+            .setTitle("Logout")
+            .setMessage("Are you sure you want to logout?")
+            .setPositiveButton("Yes") { _, _ ->
+                // Clear SharedPreferences
+                sharedPreferences.edit().clear().apply()
+                
+                // Redirect to login
+                val intent = android.content.Intent(this, LoginActivity::class.java)
+                intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                finish()
+                
+                Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("No", null)
+            .show()
     }
     
     // Random Ring Teacher Dialog with Slide Animation

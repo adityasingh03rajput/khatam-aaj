@@ -46,6 +46,8 @@
     <color name="text_white">#FFFFFF</color>
     <color name="text_disabled">#9E9E9E</color>
     <color name="text_hint">#9E9E9E</color>
+    <color name="border">#E8EAED</color>
+    <color name="border_dark">#D1D5DB</color>
     <color name="card_background">#FFFFFF</color>
     <color name="background_light">#F5F7FA</color>
     <color name="primary_main">#6C63FF</color>

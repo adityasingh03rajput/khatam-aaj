@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="accent">#48C774</color>
+    <color name="accent_dark">#3AAF5F</color>
+    <color name="accent_main">#48C774</color>
+    <color name="background">#F5F7FA</color>
+    <color name="background_day">#F5F7FA</color>
+    <color name="background_gradient_end">#E8EAED</color>
+    <color name="background_gradient_start">#F5F7FA</color>
+    <color name="background_light">#F5F7FA</color>
+    <color name="background_night">#121212</color>
+    <color name="border">#E8EAED</color>
+    <color name="border_dark">#D1D5DB</color>
+    <color name="card">#FFFFFF</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="card_day">#FFFFFF</color>
+    <color name="card_night">#2D2D2D</color>
+    <color name="divider">#E8EAED</color>
+    <color name="divider_day">#E8EAED</color>
+    <color name="divider_night">#333333</color>
+    <color name="error">#FF6B6B</color>
+    <color name="error_main">#FF6B6B</color>
+    <color name="focus_ring">#8B84FF</color>
+    <color name="gradient_purple_end">#8B84FF</color>
+    <color name="gradient_purple_start">#6C63FF</color>
+    <color name="hover_overlay">#1A6C63FF</color>
+    <color name="info">#5D9CEC</color>
+    <color name="info_light">#E3F2FD</color>
+    <color name="info_main">#5D9CEC</color>
+    <color name="overlay_dark">#80000000</color>
+    <color name="overlay_light">#40000000</color>
+    <color name="primary">#6C63FF</color>
+    <color name="primary_color">#6C63FF</color>
+    <color name="primary_dark">#5548E0</color>
+    <color name="primary_light">#8B84FF</color>
+    <color name="primary_main">#6C63FF</color>
+    <color name="primary_variant">#5548E0</color>
+    <color name="success">#48C774</color>
+    <color name="success_color">#48C774</color>
+    <color name="success_light">#E8F5E9</color>
+    <color name="success_main">#48C774</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_day">#FFFFFF</color>
+    <color name="surface_night">#1E1E1E</color>
+    <color name="text_disabled">#9E9E9E</color>
+    <color name="text_hint">#9E9E9E</color>
+    <color name="text_primary">#2C3E50</color>
+    <color name="text_primary_day">#2C3E50</color>
+    <color name="text_primary_night">#E0E0E0</color>
+    <color name="text_secondary">#7F8C8D</color>
+    <color name="text_secondary_day">#7F8C8D</color>
+    <color name="text_secondary_night">#A0A0A0</color>
+    <color name="text_white">#FFFFFF</color>
+    <color name="transparent">#00000000</color>
+    <color name="warning">#FFA500</color>
+    <color name="warning_light">#FFF3E0</color>
+    <color name="warning_main">#FFA500</color>
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+    <dimen name="app_bar_height">64dp</dimen>
+    <dimen name="button_height">56dp</dimen>
+    <dimen name="button_padding">16dp</dimen>
+    <dimen name="button_radius">12dp</dimen>
+    <dimen name="card_elevation">4dp</dimen>
+    <dimen name="card_margin">8dp</dimen>
+    <dimen name="card_radius">16dp</dimen>
+    <dimen name="chip_radius">20dp</dimen>
+    <dimen name="elevation_0">0dp</dimen>
+    <dimen name="elevation_1">1dp</dimen>
+    <dimen name="elevation_2">3dp</dimen>
+    <dimen name="elevation_3">6dp</dimen>
+    <dimen name="elevation_4">8dp</dimen>
+    <dimen name="elevation_5">12dp</dimen>
+    <dimen name="icon_large">32dp</dimen>
+    <dimen name="icon_medium">24dp</dimen>
+    <dimen name="icon_small">16dp</dimen>
+    <dimen name="nav_bar_height">80dp</dimen>
+    <dimen name="space_0">0dp</dimen>
+    <dimen name="space_1">4dp</dimen>
+    <dimen name="space_10">40dp</dimen>
+    <dimen name="space_12">48dp</dimen>
+    <dimen name="space_16">64dp</dimen>
+    <dimen name="space_2">8dp</dimen>
+    <dimen name="space_3">12dp</dimen>
+    <dimen name="space_4">16dp</dimen>
+    <dimen name="space_5">20dp</dimen>
+    <dimen name="space_6">24dp</dimen>
+    <dimen name="space_8">32dp</dimen>
+    <dimen name="spacing_large">24dp</dimen>
+    <dimen name="spacing_medium">16dp</dimen>
+    <dimen name="spacing_small">8dp</dimen>
+    <dimen name="spacing_tiny">4dp</dimen>
+    <dimen name="spacing_xlarge">32dp</dimen>
+    <dimen name="text_large">16sp</dimen>
+    <dimen name="text_medium">14sp</dimen>
+    <dimen name="text_small">12sp</dimen>
+    <dimen name="text_xxlarge">24sp</dimen>
+    <string name="app_name">Timer</string>
+    <string name="mark_attendance">Mark Attendance</string>
+    <string name="reset">Reset</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
+    <string name="timer">00:00:00</string>
+    <style name="ActionBar.LetsBunk" parent="Widget.MaterialComponents.ActionBar.Primary">
+        <item name="background">@color/primary</item>
+        <item name="titleTextStyle">@style/ActionBar.Title</item>
+    </style>
+    <style name="ActionBar.Title" parent="TextAppearance.MaterialComponents.Headline6">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="Animation"/>
+    <style name="Animation.FadeScale" parent="Animation">
+        <item name="android:windowEnterAnimation">@anim/fade_scale_enter</item>
+        <item name="android:windowExitAnimation">@anim/fade_scale_exit</item>
+    </style>
+    <style name="Animation.SlideUp" parent="Animation">
+        <item name="android:windowEnterAnimation">@anim/slide_up_enter</item>
+        <item name="android:windowExitAnimation">@anim/slide_down_exit</item>
+    </style>
+    <style name="AppBar.Premium" parent="Widget.Design.AppBarLayout">
+        <item name="android:background">@drawable/app_bar_gradient</item>
+        <item name="android:elevation">@dimen/elevation_3</item>
+        <item name="android:theme">@style/ThemeOverlay.AppCompat.Dark.ActionBar</item>
+    </style>
+    <style name="Badge"/>
+    <style name="Badge.RandomRing" parent="Badge">
+        <item name="android:layout_width">24dp</item>
+        <item name="android:layout_height">24dp</item>
+        <item name="android:background">@drawable/badge_random_ring</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/text_white</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:elevation">@dimen/elevation_2</item>
+    </style>
+    <style name="Button.Floating" parent="Widget.Design.FloatingActionButton">
+        <item name="android:layout_width">56dp</item>
+        <item name="android:layout_height">56dp</item>
+        <item name="backgroundTint">@color/accent_main</item>
+        <item name="tint">@color/text_white</item>
+        <item name="elevation">@dimen/elevation_3</item>
+        <item name="pressedTranslationZ">@dimen/elevation_4</item>
+    </style>
+    <style name="Button.LetsBunk" parent="Widget.MaterialComponents.Button">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="backgroundTint">@color/primary</item>
+        <item name="cornerRadius">8dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="Button.LetsBunk.Error">
+        <item name="backgroundTint">@color/error</item>
+    </style>
+    <style name="Button.LetsBunk.Success">
+        <item name="backgroundTint">@color/success</item>
+    </style>
+    <style name="Button.LetsBunk.Warning">
+        <item name="backgroundTint">@color/warning</item>
+    </style>
+    <style name="Button.Primary" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/button_primary_enhanced</item>
+        <item name="android:textColor">@color/text_white</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:paddingTop">@dimen/space_4</item>
+        <item name="android:paddingBottom">@dimen/space_4</item>
+        <item name="android:paddingStart">@dimen/space_6</item>
+        <item name="android:paddingEnd">@dimen/space_6</item>
+        <item name="android:minHeight">56dp</item>
+        <item name="android:elevation">@dimen/elevation_2</item>
+        <item name="android:stateListAnimator">@animator/button_elevation</item>
+    </style>
+    <style name="Button.Secondary" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/button_secondary_enhanced</item>
+        <item name="android:textColor">@color/primary_main</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:paddingTop">@dimen/space_4</item>
+        <item name="android:paddingBottom">@dimen/space_4</item>
+        <item name="android:paddingStart">@dimen/space_6</item>
+        <item name="android:paddingEnd">@dimen/space_6</item>
+        <item name="android:minHeight">56dp</item>
+        <item name="android:elevation">@dimen/elevation_1</item>
+    </style>
+    <style name="CalendarDateTextAppearance" parent="TextAppearance.AppCompat.Small">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+    <style name="Card.Elevated" parent="Card.Premium">
+        <item name="cardElevation">@dimen/elevation_4</item>
+    </style>
+    <style name="Card.LetsBunk" parent="Widget.MaterialComponents.CardView">
+        <item name="cardBackgroundColor">@color/card</item>
+        <item name="cardElevation">4dp</item>
+        <item name="cardCornerRadius">12dp</item>
+        <item name="contentPadding">16dp</item>
+    </style>
+    <style name="Card.Premium" parent="CardView">
+        <item name="cardCornerRadius">@dimen/card_radius</item>
+        <item name="cardElevation">@dimen/elevation_2</item>
+        <item name="cardBackgroundColor">@color/card_background</item>
+        <item name="android:layout_margin">@dimen/space_2</item>
+        <item name="contentPadding">@dimen/space_4</item>
+        <item name="cardUseCompatPadding">true</item>
+        <item name="cardPreventCornerOverlap">true</item>
+    </style>
+    <style name="Card.Status" parent="Card.Premium">
+        <item name="cardElevation">@dimen/elevation_1</item>
+        <item name="android:layout_margin">@dimen/space_1</item>
+        <item name="contentPadding">@dimen/space_3</item>
+    </style>
+    <style name="DialogSlideAnimation">
+        <item name="android:windowEnterAnimation">@anim/slide_up</item>
+        <item name="android:windowExitAnimation">@anim/slide_down</item>
+    </style>
+    <style name="EditText.Premium" parent="Widget.AppCompat.EditText">
+        <item name="android:background">@drawable/edittext_background</item>
+        <item name="android:padding">@dimen/space_4</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColorHint">@color/text_disabled</item>
+        <item name="android:minHeight">56dp</item>
+    </style>
+    <style name="StatusIndicator"/>
+    <style name="StatusIndicator.Absent" parent="StatusIndicator">
+        <item name="android:background">@drawable/status_absent</item>
+        <item name="android:textColor">@color/warning_main</item>
+        <item name="android:padding">@dimen/space_2</item>
+    </style>
+    <style name="StatusIndicator.Attended" parent="StatusIndicator">
+        <item name="android:background">@drawable/status_attended</item>
+        <item name="android:textColor">@color/info_main</item>
+        <item name="android:padding">@dimen/space_2</item>
+    </style>
+    <style name="StatusIndicator.Attending" parent="StatusIndicator">
+        <item name="android:background">@drawable/status_attending</item>
+        <item name="android:textColor">@color/success_main</item>
+        <item name="android:padding">@dimen/space_2</item>
+    </style>
+    <style name="TextAppearance.Body.Large" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:lineSpacingExtra">4sp</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+    <style name="TextAppearance.Body.Medium" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:lineSpacingExtra">2sp</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+    <style name="TextAppearance.Display.Large" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">32sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:lineSpacingExtra">8sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="TextAppearance.Display.Medium" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">28sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:lineSpacingExtra">8sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="TextAppearance.Headline.Large" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:lineSpacingExtra">8sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="TextAppearance.Label.Large" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="TextAppearance.Label.Medium" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="TextAppearance.Label.Small" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">11sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="TextAppearance.Title.Large" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:lineSpacingExtra">4sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="TextAppearance.Title.Medium" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:lineSpacingExtra">4sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="Theme.LetsBunk" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary_dark</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        
+        
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorSecondaryVariant">@color/accent_dark</item>
+        <item name="colorOnSecondary">@android:color/white</item>
+        
+        
+        <item name="android:colorBackground">@color/background</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        
+        
+        <item name="android:statusBarColor">@color/primary</item>
+        <item name="android:windowLightStatusBar">false</item>
+        
+        
+        <item name="actionBarStyle">@style/ActionBar.LetsBunk</item>
+        
+        
+        <item name="materialCardViewStyle">@style/Card.LetsBunk</item>
+        
+        
+        <item name="materialButtonStyle">@style/Button.LetsBunk</item>
+    </style>
+    <style name="Toolbar.Premium" parent="Widget.AppCompat.Toolbar">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:minHeight">@dimen/app_bar_height</item>
+        <item name="titleTextAppearance">@style/TextAppearance.Title.Large</item>
+        <item name="titleTextColor">@color/text_white</item>
+        <item name="subtitleTextAppearance">@style/TextAppearance.Body.Medium</item>
+        <item name="subtitleTextColor">@color/text_white</item>
+    </style>
+</resources>

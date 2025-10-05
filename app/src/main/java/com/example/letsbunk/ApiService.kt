@@ -22,7 +22,8 @@ data class StartAttendanceRequest(
     val studentName: String,
     val department: String,
     val room: String,
-    val bssid: String
+    val bssid: String,
+    val deviceId: String
 )
 
 data class StartAttendanceResponse(
@@ -90,12 +91,52 @@ data class RandomRingResponse(
 
 interface ApiService {
     
+    // Authentication
+    @POST("api/auth/login")
+    fun login(@Body request: LoginRequest): Call<LoginResponse>
+    
+    @POST("api/auth/register")
+    fun register(@Body request: RegisterRequest): Call<RegisterResponse>
+    
+    @POST("api/auth/verify")
+    fun verifyToken(@Body request: VerifyTokenRequest): Call<VerifyTokenResponse>
+    
+    @GET("api/auth/profile/{userId}")
+    fun getProfile(@Path("userId") userId: String): Call<ProfileResponse>
+    
     @GET("api/config/bssid")
     fun getAuthorizedBSSID(): Call<BSSIDResponse>
     
     @POST("api/verify-bssid")
     fun verifyBSSID(@Body request: VerifyBSSIDRequest): Call<VerifyBSSIDResponse>
     
+    // Period-based Attendance (NEW)
+    @POST("api/period-attendance/start")
+    fun startPeriodAttendance(@Body request: PeriodAttendanceStartRequest): Call<PeriodAttendanceStartResponse>
+    
+    @POST("api/period-attendance/checkin")
+    fun checkInPeriod(@Body request: PeriodAttendanceCheckInRequest): Call<PeriodAttendanceCheckInResponse>
+    
+    @GET("api/period-attendance/status/{studentId}")
+    fun getPeriodStatus(@Path("studentId") studentId: String): Call<PeriodStatusResponse>
+    
+    @GET("api/period-attendance/today/{studentId}")
+    fun getTodayAttendance(
+        @Path("studentId") studentId: String,
+        @Query("branch") branch: String,
+        @Query("semester") semester: String
+    ): Call<TodayAttendanceResponse>
+    
+    @POST("api/period-attendance/end")
+    fun endPeriodSession(@Body request: Map<String, String>): Call<EndSessionResponse>
+    
+    @GET("api/period-attendance/active-sessions")
+    fun getActiveSessions(
+        @Query("branch") branch: String? = null,
+        @Query("semester") semester: String? = null
+    ): Call<ActiveSessionsResponse>
+    
+    // Legacy timer-based attendance (for backward compatibility)
     @POST("api/attendance/start")
     fun startAttendance(@Body request: StartAttendanceRequest): Call<StartAttendanceResponse>
     
@@ -113,6 +154,13 @@ interface ApiService {
     
     @GET("api/attendance/list")
     fun getAttendanceList(): Call<AttendanceListResponse>
+    
+    // Timer state endpoints
+    @POST("api/period-attendance/timer/update")
+    fun updateTimerState(@Body request: TimerStateRequest): Call<TimerStateResponse>
+    
+    @GET("api/period-attendance/timer/state/{studentId}")
+    fun getTimerState(@Path("studentId") studentId: String): Call<TimerStateResponse>
     
     // Random Ring endpoints
     @POST("api/random-ring/start")
@@ -342,3 +390,202 @@ data class PeriodEntry(
     fun isEmpty(): Boolean = subject.isEmpty() && room.isEmpty() && teacher.isEmpty()
     fun isBreak(): Boolean = subject.equals("BREAK", ignoreCase = true)
 }
+
+// Period-based Attendance Data Classes
+data class PeriodAttendanceStartRequest(
+    val studentId: String,
+    val studentName: String,
+    val branch: String,
+    val semester: String,
+    val bssid: String
+)
+
+data class PeriodAttendanceCheckInRequest(
+    val studentId: String,
+    val studentName: String,
+    val branch: String,
+    val semester: String,
+    val bssid: String
+)
+
+data class CurrentPeriodInfo(
+    val periodNumber: Int,
+    val startTime: String,
+    val endTime: String,
+    val subject: String,
+    val teacher: String,
+    val room: String,
+    val dayOfWeek: String
+)
+
+data class PeriodAttendanceRecord(
+    val periodNumber: Int,
+    val subject: String,
+    val status: String,
+    val checkInTime: String? = null,
+    val checkOutTime: String? = null
+)
+
+data class TodayAttendanceSummary(
+    val date: String,
+    val totalPeriods: Int,
+    val periodsPresent: Int,
+    val periodsAbsent: Int,
+    val attendancePercentage: Int,
+    val periods: List<CurrentPeriodInfo>,
+    val attendanceRecords: List<PeriodAttendanceRecord>
+)
+
+data class ActiveSessionInfo(
+    val studentId: String,
+    val studentName: String,
+    val branch: String,
+    val semester: String,
+    val sessionDate: String,
+    val dayOfWeek: String,
+    val currentPeriod: CurrentPeriodInfo?,
+    val isPresent: Boolean,
+    val totalPeriodsToday: Int,
+    val periodsPresent: Int,
+    val periodsAbsent: Int,
+    val todayAttendancePercentage: Int,
+    val bssid: String? = null,
+    val timerState: TimerState? = null
+)
+
+data class PeriodAttendanceStartResponse(
+    val success: Boolean,
+    val message: String,
+    val session: ActiveSessionInfo? = null,
+    val currentPeriod: CurrentPeriodInfo? = null,
+    val todayAttendance: TodayAttendanceSummary? = null,
+    val attendanceMarked: Boolean = false,
+    val alreadyActive: Boolean = false,
+    val error: String? = null
+)
+
+data class PeriodAttendanceCheckInResponse(
+    val success: Boolean,
+    val message: String,
+    val currentPeriod: CurrentPeriodInfo? = null,
+    val todayAttendance: TodayAttendanceSummary? = null,
+    val error: String? = null
+)
+
+data class PeriodStatusResponse(
+    val success: Boolean,
+    val message: String? = null,
+    val hasSession: Boolean,
+    val session: ActiveSessionInfo? = null,
+    val currentPeriod: CurrentPeriodInfo? = null,
+    val nextPeriod: CurrentPeriodInfo? = null,
+    val todayAttendance: TodayAttendanceSummary? = null,
+    val isCollegeHours: Boolean = false
+)
+
+data class TodayAttendanceResponse(
+    val success: Boolean,
+    val attendance: TodayAttendanceSummary? = null
+)
+
+data class EndSessionResponse(
+    val success: Boolean,
+    val message: String,
+    val finalAttendance: TodayAttendanceSummary? = null
+)
+
+data class ActiveSessionsResponse(
+    val success: Boolean,
+    val sessions: List<ActiveSessionInfo>,
+    val count: Int
+)
+
+// Timer State Data Classes
+data class TimerStateRequest(
+    val studentId: String,
+    val isRunning: Boolean? = null,
+    val secondsRemaining: Int? = null
+)
+
+data class TimerStateResponse(
+    val success: Boolean,
+    val message: String? = null,
+    val timerState: TimerState? = null
+)
+
+data class TimerState(
+    val isRunning: Boolean,
+    val secondsRemaining: Int,
+    val lastUpdated: String
+)
+
+// Authentication Data Classes
+data class LoginRequest(
+    val userId: String,
+    val password: String,
+    val deviceId: String? = null
+)
+
+data class LoginResponse(
+    val success: Boolean,
+    val message: String? = null,
+    val token: String? = null,
+    val user: UserProfile? = null,
+    val error: String? = null
+)
+
+data class RegisterRequest(
+    val userId: String,
+    val email: String,
+    val password: String,
+    val name: String,
+    val role: String, // "student" or "teacher"
+    val branch: String? = null,
+    val semester: String? = null,
+    val rollNo: String? = null,
+    val department: String? = null,
+    val subject: String? = null,
+    val phone: String? = null
+)
+
+data class RegisterResponse(
+    val success: Boolean,
+    val message: String? = null,
+    val token: String? = null,
+    val user: UserProfile? = null,
+    val error: String? = null
+)
+
+data class VerifyTokenRequest(
+    val token: String
+)
+
+data class VerifyTokenResponse(
+    val success: Boolean,
+    val message: String? = null,
+    val user: UserProfile? = null,
+    val error: String? = null
+)
+
+data class ProfileResponse(
+    val success: Boolean,
+    val user: UserProfile? = null,
+    val error: String? = null
+)
+
+data class UserProfile(
+    val userId: String,
+    val email: String,
+    val name: String,
+    val role: String,
+    val phone: String? = null,
+    val isActive: Boolean = true,
+    val lastLogin: String? = null,
+    // Student fields
+    val branch: String? = null,
+    val semester: String? = null,
+    val rollNo: String? = null,
+    // Teacher fields
+    val department: String? = null,
+    val subject: String? = null
+)
